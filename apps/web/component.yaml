@@ -1,0 +1,66 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: web
+  description: The portfolio and blog (Next.js on Cloudflare Workers + Static Assets via @opennextjs/cloudflare, per environment)
+spec:
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  domain: web
+  path: apps/web
+  # Its own lane per environment: the Next.js build is the longest job in the
+  # plan, and a shared lane would wait on it.
+  lane: isolated
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@app/web"
+    wranglerConfig: wrangler.jsonc
+
+    # @opennextjs/cloudflare emits a Worker entrypoint plus a static-assets
+    # directory bound via ASSETS — both deploy in one `wrangler deploy`.
+    workerEntrypoint: .open-next/worker.js
+    assetsDir: .open-next/assets
+
+    # Per-env worker name: portfolio-starter-kit-web-{dev,stage,prod}.
+    workerName: portfolio-starter-kit-web
+    environmentAwareWorkerName: true
+
+    # The account's workers.dev subdomain; exported to the smoke step as
+    # ${WORKERS_DEV_SUBDOMAIN} and used to build ${DEPLOYED_URL}.
+    workersDevSubdomain: your-workers-subdomain
+
+    installCommand: pnpm install --frozen-lockfile
+    # The site's public origin is the environment's Worker URL (sitemap, RSS, OG
+    # and JSON-LD links are absolute). Override NEXT_PUBLIC_SITE_URL for a
+    # custom domain.
+    buildCommand: NEXT_PUBLIC_SITE_URL="https://portfolio-starter-kit-web-${ORUN_ENVIRONMENT}.${WORKERS_DEV_SUBDOMAIN}.workers.dev" pnpm exec turbo run build --filter=@app/web
+
+    # Smoke: the home page renders and carries the app's marker text.
+    smokeCommand: "html=$(curl -sfL \"${DEPLOYED_URL}/\") && echo \"${html}\" | grep -q 'My Portfolio'"
+  labels:
+    team: platform
+    layer: delivery
+    surface: web
+    runtime: cloudflare

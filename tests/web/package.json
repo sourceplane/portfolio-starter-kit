@@ -1,0 +1,19 @@
+{
+  "name": "@app/web-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@app/eslint-config": "workspace:*",
+    "@app/tsconfig": "workspace:*",
+    "@types/node": "^22.9.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
