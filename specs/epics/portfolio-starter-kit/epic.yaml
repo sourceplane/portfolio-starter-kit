@@ -1,0 +1,28 @@
+# The epic's declaration. metadata.name equals the directory name; metadata.key
+# is the task-key prefix this epic reserves (PK → PK-1, PK-2, …). Owner, target
+# date and health are the platform's — never written here.
+apiVersion: orun.io/v1
+kind: Epic
+metadata:
+  name: portfolio-starter-kit
+  key: PK
+spec:
+  title: "Vercel's Portfolio Blog Starter on Cloudflare Workers"
+  summary: "The Vercel Portfolio Blog Starter — MDX posts rendered with next-mdx-remote, syntax highlighting, an RSS feed, a sitemap and robots, JSON-LD, dynamic Open Graph images from next/og, Geist fonts and Tailwind 4 — runs on Cloudflare Workers + Static Assets through @opennextjs/cloudflare inside the Cirrus baseline's repository conventions. It is the content-site port that carries the shapes the blog-starter port left out: a route handler that renders images at request time, a feed, and absolute links that must know the site's origin."
+  state: backlog
+  milestones:
+    - name: "PK0 — the spec"
+      exitCriteria:
+        - "the doc set and the task contracts are on main"
+      tasks: [PK-1]
+    - name: "PK1 — the portfolio on Workers"
+      exitCriteria:
+        - "apps/web is the upstream template, built by `next build` + `opennextjs-cloudflare build`"
+        - "`pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` are green on main (Checks)"
+        - "`wrangler dev` serves /, /blog, every post, /rss, /sitemap.xml, /robots.txt and renders /og?title= as a PNG"
+      tasks: [PK-2]
+    - name: "PK2 — ready to instantiate"
+      exitCriteria:
+        - "the README says how to run, test, preview and deploy it, and how the site origin and analytics are configured"
+        - "the as-built status records every departure from the upstream template"
+      tasks: [PK-3]
