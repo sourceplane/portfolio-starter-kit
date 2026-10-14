@@ -1,0 +1,185 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# PR runs share a group per ref and superseded runs are cancelled (each
+# push re-plans anyway), which stops stale fan-outs from starving the
+# runner pool. Main pushes get a unique group each: convergence runs plan
+# --changed per commit, and GitHub replaces *pending* runs in a shared
+# group even with cancel-in-progress false — a superseded main run's
+# components would silently never converge.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  # A lane of several jobs posts one check run per job, named by the job's
+  # check title, so branch protection sees the same names as before lanes.
+  checks: write
+
+jobs:
+  plan:
+    if: ${{ vars.ORUN_CI == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      lane-matrix: ${{ steps.matrix.outputs.lane-matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: sourceplane/orun-action@v1.2.0
+        with:
+          version: v2.78.0
+      - env:
+          # Surface the best-effort catalog auto-sync (execution.state.autopushCatalog).
+          # A successful push prints "✓ pushed catalog …"; ORUN_VERBOSE also makes
+          # any skip/failure visible instead of silent.
+          ORUN_VERBOSE: "1"
+        run: |
+          set -euo pipefail
+
+          plan_args=(
+            --from-ci github
+            --event-file "$GITHUB_EVENT_PATH"
+            --intent intent.yaml
+            --output plan.json
+            --changed
+          )
+
+          orun plan "${plan_args[@]}"
+      # One matrix entry per LANE (execution.lanes in intent.yaml). A plan
+      # without lanes gets one per job, exactly the old matrix, and
+      # `orun run --lane <job id>` on it is `--job <job id>`.
+      - id: matrix
+        run: |
+         echo "lane-matrix=$(jq -c 'if ((.lanes // []) | length) > 0
+           then [.lanes[] | {"lane": .id, "name": .name}]
+           else [.jobs[] | {"lane": .id, "name": .checkName}] end' plan.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: orun-plan
+          path: plan.json
+
+  run:
+    needs: plan
+    runs-on: ubuntu-latest
+    # A BOOTSTRAP LANDING IS CHECKED BY `plan` ALONE. Every phase of the
+    # baseline bootstrap lands on a branch named for its task — the provenance
+    # pen's `orun/<KEY>-<slug>`, and the bootstrap's tasks are all `BASE-n` —
+    # and is merged by `orun.pr/land@v1` as soon as this workflow is green.
+    # On those pull requests `plan` above is the check: the intent, every
+    # component and every composition resolve, the changed set is computed,
+    # and the plan is uploaded. The lanes are not run there, because the merge
+    # runs every one of them again on main moments later, for real, and the
+    # bootstrap watches that convergence to green before the next phase — the
+    # PR pass was the same work twice, and a third of a bootstrap's wall-clock.
+    # Every other pull request runs its lanes exactly as before.
+    if: >-
+      ${{ needs.plan.outputs.lane-matrix != '[]' && needs.plan.outputs.lane-matrix != ''
+          && !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'orun/BASE-')) }}
+    strategy:
+      fail-fast: false
+      # Stagger the fan-out: every lane hits the lease-bound resolve at job
+      # start, and an unbounded herd (fifty lanes) saturated it twice. Sixteen
+      # keeps the herd well under that and is above execution.lanes.maxLanes
+      # (6), so a packed plan starts every lane at once; it only binds on a
+      # small plan that runs one lane per job. Inside a lane a job that waits
+      # on another lane holds no slot.
+      max-parallel: 16
+      matrix:
+        include: ${{ fromJson(needs.plan.outputs.lane-matrix) }}
+    name: ${{ matrix.name }}
+    env:
+      # One pnpm store for every lane, restored below. Each lane installs the
+      # whole workspace with --frozen-lockfile; without this every one of them
+      # downloaded all ~500 packages from the registry again.
+      npm_config_store_dir: /home/runner/.pnpm-store
+      PNPM_STORE_DIR: /home/runner/.pnpm-store
+    steps:
+      - uses: actions/checkout@v6
+      # Keyed by the lockfile alone, so every lane of every run shares one
+      # entry until a dependency changes. The first lane to finish saves it;
+      # the rest find the key taken and skip the save.
+      - name: pnpm store cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+      - uses: actions/download-artifact@v8
+        with:
+          name: orun-plan
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sourceplane/orun-action@v1.2.0
+        with:
+          version: v2.78.0
+      # exec-id is the RUN id alone (no attempt suffix): a `gh run rerun
+      # --failed` then RESUMES the same orun execution — jobs that succeeded in
+      # a prior attempt stay completed, so re-run lanes' cross-job dependencies
+      # are already satisfied instead of waiting forever on lanes that are not
+      # re-running (the partial-rerun deadlock). --retry re-opens THIS
+      # lane's failed jobs when they terminally failed in a prior attempt
+      # (no-op on first attempts); its completed jobs stay completed — together
+      # they make `gh run rerun --failed` a true resume.
+      - run: |
+          # --retry only on re-run attempts: on a fresh attempt a failed
+          # upstream is a genuine failure and dependents must fail fast; on a
+          # resume (gh run rerun --failed) the upstream's own retry lane will
+          # re-open it, so lanes wait out the race instead.
+          retry_flag=""
+          if [ "${GITHUB_RUN_ATTEMPT:-1}" -gt 1 ]; then retry_flag="--retry"; fi
+          # EVERY RUN REPORTS TO THE PLATFORM, a pull request's included.
+          #
+          # A PR lane resolves its secrets like any other (a verify lane still
+          # reads the wiring its fixture stands in for, an infra lane plans
+          # against the real account), and a job's secret refs are resolved
+          # before its first step whatever its profile does — so a PR run
+          # without remote state failed every lane that declares one:
+          #
+          #   ✗ cloudflare-d1.stage.terraform: secret resolution failed: local
+          #     runs resolve secrets only from ORUN_SECRET_<KEY> overrides
+          #
+          # and a phase's PR could never be verified before it merged. This
+          # used to drop the state flag on PRs, on the belief that the backend
+          # refuses a pull_request OIDC token by design. It does not: the
+          # exchange's only gate is the repo link's CI settings (oidcEnabled,
+          # allowedRefPattern, allowedEnvironments — identity-worker
+          # oidc-exchange.ts), and the resource-hidden `not_found` seen at the
+          # time is exactly what an UNLINKED repository answers, push or PR.
+          # Remote state on a PR also puts the PR's runs in front of the
+          # platform, which renders runs on refs/pull/<n> as that PR's row.
+          # Fork PRs get no OIDC token from GitHub at all and still fail
+          # closed. Nothing mutating runs here: deploy/apply profiles are gated
+          # on triggerRef github-push-main.
+          state_flag="--remote-state"
+          orun run \
+            --plan plan.json \
+            --runner github-actions \
+            $state_flag \
+            --lane "${{ matrix.lane }}" \
+            --exec-id "${{ github.run_id }}" \
+            $retry_flag
+        env:
+          # GITHUB_TOKEN is the only credential CI holds — GitHub-issued and
+          # ephemeral. Every provider credential (the Cloudflare token and
+          # account id — this baseline has no second provider) is an
+          # orun-managed secret:
+          # brokered fresh per run from the workspace's integrations, resolved
+          # lease-bound by the jobs that declare it (profile secretBindings or
+          # component secretEnv), and log-redacted. Nothing provider-shaped is
+          # stored in GitHub.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_CONFIG: /home/runner/.docker

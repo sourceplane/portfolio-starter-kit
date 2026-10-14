@@ -1,0 +1,166 @@
+apiVersion: sourceplane.io/v1
+kind: Intent
+
+metadata:
+  name: portfolio-starter-kit
+  description: Vercel's Portfolio Blog Starter (MDX posts, RSS, sitemap, dynamic OG images, Tailwind 4) ported to Cloudflare Workers + Static Assets on the Cirrus baseline conventions
+  namespace: sourceplane
+
+execution:
+  state:
+    backendUrl: https://api-edge-prod.oruncloud.workers.dev
+    # Declared, enforced tenancy: the workspace claim is sent on every remote op
+    # (including the credential-free CI OIDC exchange) so the platform can
+    # enforce claim ⊆ authorized. Declaring it implies strict mode — a
+    # non-interactive run that resolves no workspace fails fast.
+    #
+    # Replace with this product's own Orun workspace (`orun cloud link`), and
+    # set the `ORUN_CI` repository variable to `true` to turn `ci.yml` on.
+    workspace: ws_CHANGE_ME
+    requireOrg: true
+    # Push the resolved catalog after a successful plan on the default branch,
+    # keeping the workspace-global catalog head fresh without an explicit
+    # `--push-catalog`.
+    autopushCatalog: true
+  # Lanes (orun ≥ v2.76.0): CI runs one GitHub job per LANE, not per orun job.
+  lanes:
+    mode: auto
+    maxLanes: 6
+    concurrency: 6
+
+compositions:
+  sources:
+    # The composition stack lives in sourceplane/stack-tectonic and is consumed
+    # as a published OCI artifact rather than a repo-local directory. Pin an
+    # explicit version: a bare repository reference resolves to `:latest`,
+    # which would let a catalog release change this repo's execution contracts
+    # without a commit here. Bumping the tag is the deliberate upgrade step.
+    - name: stack-tectonic
+      kind: oci
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.18.2
+  resolution:
+    precedence:
+      - stack-tectonic
+    bindings:
+      terraform: stack-tectonic
+      cloudflare-domain: stack-tectonic
+      db-migrate: stack-tectonic
+
+discovery:
+  roots:
+    - apps/
+    - infra/
+    - packages/
+    - tests/
+
+# Where the work lives (initiative-lifecycle): an epic is a directory with an
+# epic.yaml under `epics`, a task a contract under `tasks`; the `orun plan` on
+# main reconciles the tree into the workspace's work plane after a merge.
+work:
+  epics: specs/epics
+  tasks: tasks
+  sync: on-merge
+
+automation:
+  triggerBindings:
+    github-pull-request:
+      description: Pull request validation
+      on:
+        provider: github
+        event: pull_request
+        actions:
+          - opened
+          - synchronize
+          - reopened
+          - ready_for_review
+        baseBranches:
+          - main
+      plan:
+        scope: changed
+        base: pull_request.base.sha
+        head: pull_request.head.sha
+
+    github-push-main:
+      description: Main branch stack convergence after merge
+      on:
+        provider: github
+        event: push
+        branches:
+          - main
+
+    local-development:
+      description: Local testing with full Terraform execution
+      on:
+        provider: local
+
+environments:
+  dev:
+    description: Verify-only. Pull requests plan and verify here; nothing is deployed.
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+        - local-development
+    dependencyMode: advisory
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: dev-
+        owner: sourceplane
+        repo: portfolio-starter-kit
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: portfolio-starter-kit.example.com
+
+  stage:
+    description: Deployed on every merge to main, before prod.
+    url: https://portfolio-starter-kit-web-stage.your-workers-subdomain.workers.dev
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: stg-
+        owner: sourceplane
+        repo: portfolio-starter-kit
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: portfolio-starter-kit.example.com
+
+  prod:
+    description: Where visitors are. Deploys after stage converges on the same commit.
+    url: https://portfolio-starter-kit-web-prod.your-workers-subdomain.workers.dev
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+    promotion:
+      dependsOn:
+        - environment: stage
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: prod-
+        owner: sourceplane
+        repo: portfolio-starter-kit
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: portfolio-starter-kit.example.com
+
+# Repo-level catalog entity: front page + role-tagged docs (rendered in the
+# workspace Docs library, pinned to the commit by `orun plan`).
+repo:
+  displayName: portfolio-starter-kit
+  docs:
+    overview: README.md
+    pages:
+      - { path: specs/epics/portfolio-starter-kit/README.md, role: reference, title: The epic }
+      - { path: specs/epics/portfolio-starter-kit/design.md, role: architecture, title: Design }

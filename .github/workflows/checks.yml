@@ -1,0 +1,39 @@
+name: Checks
+
+# Credential-free verification: install, render the offline wrangler fixtures,
+# typecheck, lint, test and build. Runs on every push and pull request and is
+# the merge gate until the product is linked to an Orun workspace, at which
+# point `ci.yml` (Orun plan/run with brokered Cloudflare credentials) takes
+# over — it stays gated behind the `ORUN_CI` repository variable until then.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: checks-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Templated deployables render their wrangler config from the committed
+      # fixture; an unresolved wiring token fails here, not at deploy time.
+      - run: pnpm run wire:fixture
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build

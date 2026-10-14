@@ -1,0 +1,6 @@
+apiVersion: kiox.io/v1
+kind: Workspace
+metadata:
+    name: example-platform
+providers:
+  orun: ghcr.io/sourceplane/orun:v2.15.0
