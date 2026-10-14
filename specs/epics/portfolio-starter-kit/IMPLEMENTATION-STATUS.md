@@ -5,9 +5,9 @@ the code departed from `design.md` or from the upstream template.
 
 | Milestone | State | PR |
 |---|---|---|
-| PK0 — the spec | | |
-| PK1 — the portfolio on Workers | | |
-| PK2 — ready to instantiate | | |
+| PK0 — the spec | ✅ Shipped | [#1](https://github.com/sourceplane/portfolio-starter-kit/pull/1) |
+| PK1 — the portfolio on Workers | ✅ Shipped | [#2](https://github.com/sourceplane/portfolio-starter-kit/pull/2) |
+| PK2 — ready to instantiate | ✅ Shipped | [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3) |
 
 ## Departures from the upstream template
 
@@ -49,3 +49,24 @@ stable 4.x line.
 The nav's `deploy` item and the footer's `view source` link pointed at the
 Vercel template page; they point at this repository (the nav item reads
 `source`).
+
+## Verified
+
+- Local: `pnpm typecheck`, `pnpm lint`, `pnpm test` (3 tests), `pnpm build`
+  green; `wrangler dev` over `.open-next/worker.js`: `/`, `/blog`,
+  `/blog/vim` 200; `/blog/nope` 404; `/rss` 200 `text/xml` with 3 items;
+  `/sitemap.xml` 200; `/robots.txt` 200; `/og?title=Hello` 200 `image/png`
+  1200×630.
+- CI: `Checks` green on #2.
+- Not verified: a live deploy (gated until the product is linked to an Orun
+  workspace with a Cloudflare connection) and the Web Analytics beacon with
+  a real token.
+
+## Versions
+
+| Package | Version | Why |
+|---|---|---|
+| next | 16.3.8 | newest inside `@opennextjs/cloudflare` 1.20.11's peer range |
+| @opennextjs/cloudflare | ^1.20.11 | static-assets incremental cache + `populateCache local` |
+| tailwindcss, @tailwindcss/postcss | ^4.1 (stable) | the template pinned `4.0.0-alpha.13` |
+| next-mdx-remote | ^6.0.0 | as upstream |

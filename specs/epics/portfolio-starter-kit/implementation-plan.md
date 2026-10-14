@@ -3,7 +3,7 @@
 Milestones land in order; each task is one pull request on an
 `orun/PK-n-<slug>` branch with an `Orun-Task: PK-n` trailer.
 
-## PK0 — the spec
+## PK0 — the spec ✅
 
 This doc set, `epic.yaml` and the task contracts, merged to `main`.
 
@@ -11,7 +11,7 @@ This doc set, `epic.yaml` and the task contracts, merged to `main`.
 - the five documents and `epic.yaml` are on `main`
 - `tasks/PK-1..PK-3.TaskContract.yaml` exist
 
-## PK1 — the portfolio on Workers
+## PK1 — the portfolio on Workers ✅
 
 `apps/web` is the upstream template with the Workers build around it;
 `tests/web` exercises the loader, `formatDate` and the sitemap.
@@ -20,7 +20,7 @@ This doc set, `epic.yaml` and the task contracts, merged to `main`.
 - `pnpm install && pnpm typecheck && pnpm lint && pnpm test && pnpm build` is green locally and in `Checks`
 - `wrangler dev` answers `/` and `/blog` (post list), `/blog/vim` (the post), `/blog/nope` (404), `/rss` (XML with three items), `/sitemap.xml`, `/robots.txt`, and `/og?title=Hello` with `image/png`
 
-## PK2 — ready to instantiate
+## PK2 — ready to instantiate ✅
 
 README (run, test, preview, deploy; `NEXT_PUBLIC_SITE_URL`,
 `NEXT_PUBLIC_CF_BEACON_TOKEN`), `IMPLEMENTATION-STATUS.md`, epic `completed`.

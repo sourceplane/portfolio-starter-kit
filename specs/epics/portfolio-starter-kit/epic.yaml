@@ -9,7 +9,7 @@ metadata:
 spec:
   title: "Vercel's Portfolio Blog Starter on Cloudflare Workers"
   summary: "The Vercel Portfolio Blog Starter — MDX posts rendered with next-mdx-remote, syntax highlighting, an RSS feed, a sitemap and robots, JSON-LD, dynamic Open Graph images from next/og, Geist fonts and Tailwind 4 — runs on Cloudflare Workers + Static Assets through @opennextjs/cloudflare inside the Cirrus baseline's repository conventions. It is the content-site port that carries the shapes the blog-starter port left out: a route handler that renders images at request time, a feed, and absolute links that must know the site's origin."
-  state: backlog
+  state: completed
   milestones:
     - name: "PK0 — the spec"
       exitCriteria:
