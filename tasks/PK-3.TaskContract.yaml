@@ -1,0 +1,14 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+spec:
+  goal: A reader can run, test, preview and deploy the port from the README; the as-built status is complete
+  affects:
+    - README.md
+    - specs/epics/portfolio-starter-kit/IMPLEMENTATION-STATUS.md
+    - specs/epics/portfolio-starter-kit/README.md
+    - specs/epics/portfolio-starter-kit/epic.yaml
+    - specs/epics/README.md
+  doneWhen:
+    - README quick start is verified from a fresh clone
+    - IMPLEMENTATION-STATUS lists every PR and departure
+  gates: []
