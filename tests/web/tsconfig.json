@@ -1,0 +1,26 @@
+{
+  "extends": "../../tooling/tsconfig/web.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "app/*": [
+        "../../apps/web/app/*"
+      ]
+    },
+    "strict": false,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ]
+}
