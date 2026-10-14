@@ -8,7 +8,7 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 
 | Field | Value |
 |-------|-------|
-| Status | Draft |
+| Status | ✅ Shipped — PK0–PK2 landed (#1, #2, #3) |
 | Cluster | **PK** (PK0–PK2) |
 | Owner(s) | `apps/web` (the site) · `tests/web` (loader, date and sitemap tests) |
 | Builds on | `cirrus-baseline` conventions; the `blog-starter` port's build shape (static-assets incremental cache + `populateCache`) |
@@ -16,7 +16,7 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 | Changes | Adds the Workers build, the monorepo wrapper, tests and the deploy contract; swaps two Vercel scripts for one Cloudflare beacon; makes the origin an env var |
 | Decisions locked | (1) OpenNext on Workers + Static Assets. (2) Posts pre-rendered, `dynamicParams = false`. (3) `baseUrl` = `NEXT_PUBLIC_SITE_URL`, set by the Orun build to the environment's Worker URL. (4) Tailwind 4 stable instead of the alpha the template pinned. |
 | Gate | PK1 is the first user-visible rung. |
-| Shipped as | |
+| Shipped as | `main` after [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3); verified locally under `wrangler dev`, deploy gated until a workspace is linked |
 
 ## Read order
 
