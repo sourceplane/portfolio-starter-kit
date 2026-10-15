@@ -9,7 +9,8 @@ the code departed from `design.md` or from the upstream template.
 | PK1 — the portfolio on Workers | ✅ Shipped | [#2](https://github.com/sourceplane/portfolio-starter-kit/pull/2) |
 | PK2 — ready to instantiate | ✅ Shipped | [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3) |
 | PK3 — a baseline | ✅ Shipped | [#4](https://github.com/sourceplane/portfolio-starter-kit/pull/4) (PK-4), tagged `baseline-v1` |
-| PK4 — proven live | 🟡 In progress | this PR (PK-5), to be tagged `baseline-v2` |
+| PK4 — proven live | ✅ Shipped | [#5](https://github.com/sourceplane/portfolio-starter-kit/pull/5) (PK-5), tagged `baseline-v2`; proven by a console bootstrap on 2026-10-15 (below) |
+| PK5 — one landing | 🟡 In progress | this PR (PK-6), to be tagged `baseline-v3` |
 
 ## Departures from the upstream template
 
@@ -76,6 +77,28 @@ ships into every site. It now describes the app and credits the template (MIT).
 | orun lane pin | v2.78.0 | v2.78.4 | cirrus-baseline's pin |
 | `intent.yaml` | terraform `parameterDefaults`; docs pages under `specs/` | neither; docs pages `ai/context/*` | no terraform component; the pages must exist in a site |
 | `tasks/PK-1..3` | no `metadata` | `metadata.name` and `title` | `orun work check` (≥ v2.79) refused them |
+
+## One landing (PK5)
+
+cirrus-baseline's baseline-v22 builds its whole product in one landing
+(`01-product`) and checks each bootstrap pull request with `plan` alone. This
+baseline now does the same (PK-6):
+
+| Before (baseline-v2) | Now | Why |
+|---|---|---|
+| three phases: `01-scaffold`, `02-site`, `03-docs` | two: `01-product` (every module), `03-docs` (hooks only; its name kept, the gap kept, as Cirrus kept `08-docs`) | a landing has a fixed cost (place, PR, checks, merge, convergence start); nothing in the scaffold/site split was order the plan could not carry |
+| `01-scaffold` waited on Checks (install, typecheck, lint, test, build) and `plan`; `02-site` merged without waiting (`wait: false`); `03-docs` waited on both | every landing waits on its PR's CI, which on `orun/BASE-…` is `plan` alone: `ci.yml` skips the lanes and `checks.yml` now skips its job | the convergence on main installs, builds, tests, deploys and smoke-tests the site for real; Checks on the PR was the same build twice, and most of each landing's wait |
+| the brokered secrets minted in `02-site`'s `pre` | minted in `01-product`'s `post`, after `repo` and `link`, before `land` | the repository exists and is linked before a secret is written for its project — Cirrus's order |
+| `02-site` seeded the lockfile from the baseline's, then pruned | `pnpm install --lockfile-only` only confirms the placed lockfile | the whole tree is placed at once, so the complete lockfile is already the right one |
+| `.baseline/tasks/01-scaffold`, `02-site` | `.baseline/tasks/01-product` (`affects: [web, web-tests]` — the retouch set) | one landing, one task |
+| the offline bootstrap committed one landing per phase from an empty repository | the repository's empty first commit, then one per phase | on the platform the first pull request opens against an empty "Initial commit" by `orun`; it is the base the one landing's push is planned against (`testing/placement.test.sh` §4, `testing/e2e.test.sh` §2) |
+| e2e ran the Checks at the scaffold's landing and at the finished site | at the finished site only | there is no scaffold landing, and no landing waits on Checks |
+
+Measured on `baseline-v2` from the console's Build, 2026-10-15
+(`portfolio-live`, `bst_R3SZP8S4`): 8m43s end to end — about 1m50s of build
+sandbox start, `01-scaffold` 1m5s, `02-site` 4m7s, `03-docs` 1m40s (its
+landing waited 52s on Checks). The estimate here is 6 minutes (5 + 1), to be
+replaced by the first bootstrap from `baseline-v3`.
 
 ## The first live bootstrap (PK4)
 

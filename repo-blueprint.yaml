@@ -6,7 +6,7 @@ metadata:
     The portfolio starter kit as a Blueprint of itself — instantiate a new
     portfolio-and-blog repository (MDX posts, RSS, sitemap, JSON-LD, dynamic
     Open Graph images, Next.js on Cloudflare Workers + Static Assets) and take
-    it from nothing to live on stage and prod in three phases. Run one at a
+    it from nothing to live on stage and prod in one landing, then record it. Run one at a
     time with `--phase <name>` or the whole sequence with `--resume`; see
     docs/phases/README.md for the contract every phase follows, and
     BOOTSTRAP.md for the operator checklist no script can perform.
@@ -43,7 +43,7 @@ inputs:
     required: true
     description: >-
       GitHub owner the site's repository is created under — and the owner in
-      the source link the site's nav carries. 01-scaffold waits for the App
+      the source link the site's nav carries. 01-product waits for the App
       installation on THIS owner before it creates anything: the platform
       learns of a pull request only through the installation on the account
       that owns the repository.
@@ -67,7 +67,7 @@ inputs:
     from: workspace
     description: >-
       Orun Cloud workspace (ws_…) for the site's remote state. Unset, it is
-      the workspace the build runs in; with none anywhere, 01-scaffold writes
+      the workspace the build runs in; with none anywhere, 01-product writes
       a placeholder that fails loudly rather than silently claiming another
       tenant's workspace.
   epicSlug:
@@ -226,7 +226,7 @@ modules:
   # ── the empty discovery roots, declared ──────────────────────────────────
   # orun's repo-scale gate — and later `orun plan` in the site's own CI —
   # discovers apps/, infra/, packages/ and tests/, and a missing root is a
-  # hard failure. They are empty until 02-site fills two of them. A file the
+  # hard failure. The site fills two of them in the same landing. A file the
   # tree needs in order to be valid is what a module is for.
   - name: discovery-roots
     mode: template
@@ -300,27 +300,19 @@ hooks:
         description: >-
           Everything the portfolio starter kit builds for
           {{ .inputs.productname }} in {{ .inputs.githuborg }}/{{ .inputs.reponame }}:
-          the repository and its CI, the site live on stage and prod, and the
-          record of what went live. One milestone per phase, in the order the
-          phases run; one task per landing, each bound to the pull request
-          that lands it.
+          the repository, its CI and the site live on stage and prod in one
+          landing, then the record of what went live. One milestone per phase,
+          in the order the phases run; one task per landing, each bound to the
+          pull request that lands it.
         owner: me
     - id: m01
       uses: orun.task/ensure@v1
       with:
         kind: milestone
         epic: "{{ .inputs.epicSlug }}"
-        name: 01-scaffold
+        name: 01-product
         exitCriteria:
           - repository created under {{ .inputs.githuborg }} and linked to the workspace
-          - the scaffold merged, main pinned as the default branch
-    - id: m02
-      uses: orun.task/ensure@v1
-      with:
-        kind: milestone
-        epic: "{{ .inputs.epicSlug }}"
-        name: 02-site
-        exitCriteria:
           - the site built and deployed on stage and prod, its smoke green
           - the home page answers on both workers.dev URLs
     - id: m03
@@ -337,27 +329,16 @@ hooks:
       with:
         kind: task
         epic: "{{ .inputs.epicSlug }}"
-        milestone: 01-scaffold
-        name: "Scaffold the site's repository"
+        milestone: 01-product
+        name: "Build the site in one landing"
         brief: >-
-          Create {{ .inputs.githuborg }}/{{ .inputs.reponame }} and land its
-          foundations as the first pull request: the intent, CI, tooling and
-          the identity every later phase reads back, branded as
-          {{ .inputs.productname }}.
+          Create {{ .inputs.githuborg }}/{{ .inputs.reponame }} and land the
+          whole site as one pull request — intent, CI, tooling, the identity,
+          the site and its tests, branded as {{ .inputs.productname }} — then
+          see the convergence build it with OpenNext and deploy it to stage and
+          prod, smoke-tested over HTTP.
         prefix: BASE
-        contract: .baseline/tasks/01-scaffold.TaskContract.yaml
-    - id: t02
-      uses: orun.task/ensure@v1
-      with:
-        kind: task
-        epic: "{{ .inputs.epicSlug }}"
-        milestone: 02-site
-        name: "Deploy the site"
-        brief: >-
-          Land the site and its tests, and see the convergence build it with
-          OpenNext and deploy it to stage and prod, smoke-tested over HTTP.
-        prefix: BASE
-        contract: .baseline/tasks/02-site.TaskContract.yaml
+        contract: .baseline/tasks/01-product.TaskContract.yaml
     - id: t03
       uses: orun.task/ensure@v1
       with:
@@ -383,30 +364,46 @@ hooks:
 # the task plane's milestones carry. A dependency may never point forward
 # across a phase boundary; orun refuses the blueprint if one does.
 #
+# ONE LANDING BUILDS THE SITE (cirrus-baseline baseline-v22's shape). A landing
+# has a fixed cost however small it is — place, open a PR, wait for its
+# checks, merge, wait for the convergence to start — and the bootstrap used to
+# pay it three times: the scaffold, the site, the record. Nothing in the
+# scaffold/site split was order the plan could not carry itself: the site's
+# build reads the tooling from the same tree, and the convergence on main is
+# what deploys it either way. So 01-product places the whole tree, brands it
+# and lands it as one pull request, and its convergence deploys the site to
+# stage and prod. 03-docs stays a landing of its own because it records what
+# went live and puts back the two bootstrap deferrals. The numbering keeps its
+# gap so the names stay the identities the task plane and `--phase` use.
+#
 # One phase places NO modules: `03-docs` is hooks only. It is a phase because
 # it is a separately landable unit with its own task and its own PR.
 phases:
-  - name: 01-scaffold
-    title: The repo is born
-    description: Root manifests, tooling, CI, the identity file, and the empty discovery roots.
-    expectedMinutes: 3
+  - name: 01-product
+    title: The site, built in one landing
+    description: The whole tree — manifests, tooling, CI, the identity and the site — branded, landed as one pull request, and deployed to stage and prod by one convergence.
+    expectedMinutes: 5
     narrate:
-      start:  "Creating the repository and writing its foundations — intent, CI, tooling, and the identity every later phase reads back. About {{ .meta.expectedMinutes }} minutes."
-      await:  "Waiting for the first push to settle on main."
-      done:   "{{ .inputs.reponame }} exists on GitHub with {{ .meta.files }} files on main, branded as {{ .inputs.productname }}. That took {{ .meta.elapsed }}."
-      failed: "The repository did not get off the ground. The log above says where it stopped."
-    modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-gitignore, root-intent, root-kiox, root-kiox-lock, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode]
+      start:  "Creating the repository and landing the whole site in one pull request — intent, CI, tooling, the pages, the posts, the feed and the Open Graph images. Then one convergence builds it with OpenNext and deploys it to stage and prod side by side. Usually about {{ .meta.expectedMinutes }} minutes."
+      await:  "The site is building and deploying on both environments. The Next.js build is the long pole; nothing is stuck."
+      done:   "{{ .inputs.reponame }} is live on stage and prod — {{ .meta.files }} files on main, branded as {{ .inputs.productname }}. That took {{ .meta.elapsed }}."
+      failed: "The site did not come up. The failing lane above names the step — the build, the deploy or the smoke — and a provider error is in its log."
+    modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-gitignore, root-intent, root-kiox, root-kiox-lock, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode, web, web-tests]
     # THE PLATFORM MUST BE ABLE TO SEE THE REPOSITORY BEFORE IT EXISTS. Every
     # phase lands a pull request that files under its task, and the platform
     # learns of a PR only through the GitHub App installation on the account
     # that OWNS the repository. So the owner's connection is asked for here,
     # before a repository is created, and waited for like any other consent.
+    # And the Cloudflare connection, which the deploy credentials below are
+    # minted from — asked for here too, since this phase is the one that
+    # deploys. `requires.probe` asks reality what a lock file cannot: are both
+    # connections live right now?
     requires:
       probe:
-        - id: github
+        - id: providers
           uses: orun.doctor/check@v1
           with:
-            providers: [github]
+            providers: [github, cloudflare]
             githubOwner: "{{ .inputs.githuborg }}"
             waitSeconds: 600
             pollSeconds: 20
@@ -421,14 +418,24 @@ phases:
             kind: task
             epic: "{{ .inputs.epicSlug }}"
             milestone: "{{ .phase.name }}"
-            name: "Scaffold the site's repository"
+            name: "Build the site in one landing"
             prefix: BASE
-            contract: .baseline/tasks/01-scaffold.TaskContract.yaml
-      # The identity chain. rebrand.mjs enumerates the tree with
-      # `git ls-files`, so the output has to be a git repository with a
-      # populated index BEFORE it runs. `git add -A` only stages; the landing
-      # commits.
+            contract: .baseline/tasks/01-product.TaskContract.yaml
       post:
+        # A RE-RUN PHASE MUST HAVE SOMETHING TO LAND. A convergence can fail
+        # AFTER its PR merged, and the merge has already put every file this
+        # phase places on main; orun derives phase state from the tree, so a
+        # forced re-run lands an EMPTY diff while the site's CI plans
+        # `--changed`. So the phase rewrites ONE trailing marker line in each
+        # component.yaml its contract names — `# orun: redeploy <phase>
+        # <stamp>` — and the landing has a diff. The marker is a deploy
+        # trigger, not state: nothing reads it back.
+        - id: retouch
+          run: ["node", "{{ .baseline.dir }}/tooling/bootstrap/retouch.mjs", "--phase", "{{ .phase.name }}", "--affects", "{{ .baseline.dir }}/.baseline/tasks/01-product.TaskContract.yaml"]
+        # The identity chain. rebrand.mjs enumerates the tree with
+        # `git ls-files`, so the output has to be a git repository with a
+        # populated index BEFORE it runs. `git add -A` only stages; the landing
+        # commits. The whole tree is here, so the one rebrand brands all of it.
         - id: git-init
           run: ["git", "init", "-q"]
         - id: git-stage
@@ -470,7 +477,7 @@ phases:
           run: ["node", "{{ .baseline.dir }}/tooling/bootstrap/work-tree.mjs", "--strip"]
         # STAGE AND PROD DEPLOY SIDE BY SIDE UNTIL THE BOOTSTRAP IS DONE. The
         # promotion gate makes prod wait out stage's deploy; during a
-        # bootstrap both are empty and every phase is watched to green, so it
+        # bootstrap both are empty and the landing is watched to green, so it
         # protects nothing and doubles the convergence. Deferred here,
         # restored by 03-docs. tooling/bootstrap/promotion.mjs.
         - id: promotion
@@ -486,8 +493,10 @@ phases:
           run: ["git", "add", "-A"]
         - id: rebrand-verify
           run: ["node", "{{ .baseline.dir }}/tooling/rebrand/rebrand.mjs", "--verify", "--values", ".rebrand/values.json"]
-        # The lockfile, pruned to the projects placed so far; the lanes and
-        # Checks install with --frozen-lockfile.
+        # root-pnpm-lock places the baseline's complete lockfile and the whole
+        # tree is here, so this only confirms it — a no-op in well under a
+        # second, where the old per-phase prune of the Next.js tree was a
+        # resolve. The lanes and Checks install with --frozen-lockfile.
         - id: pnpm-lockfile
           run: ["pnpm", "install", "--lockfile-only"]
         # The repo has to exist before there is anywhere to land.
@@ -518,56 +527,11 @@ phases:
             - link
             - "{{ .inputs.orunWorkspace }}"
             - "{{ .inputs.githuborg }}/{{ .inputs.reponame }}"
-        # EVERY PHASE IS A PULL REQUEST THAT IS CHECKED, THEN MERGED. This one
-        # waits for its PR's whole CI run (orun >= v2.58.6): Checks over the
-        # scaffold, and `plan` — on a bootstrap branch (`orun/BASE-…`) the
-        # lanes are skipped (ci.yml), because the merge runs them on main.
-        - id: land
-          uses: orun.pr/land@v1
-          narrate: "The first commit is merged into main."
-          with:
-            task: "{{ .phase.hooks.task.outputs.key }}"
-            epic: "{{ .inputs.epicSlug }}"
-            branchSlug: "{{ .phase.name }}"
-            title: "feat(scaffold): the site's repository, its CI and its identity"
-
-  - name: 02-site
-    title: The site, live
-    description: Next.js on Workers and Static Assets, built by OpenNext and deployed to stage and prod.
-    expectedMinutes: 8
-    narrate:
-      start:  "Now the site itself — the pages, the posts, the feed and the Open Graph images — built by OpenNext and deployed to stage and prod side by side. This is the first phase that touches Cloudflare. Usually about {{ .meta.expectedMinutes }} minutes."
-      await:  "The site is building and deploying on both environments. The Next.js build is the long pole; nothing is stuck."
-      done:   "{{ .meta.files }} files are on main and the site answers on stage and prod. {{ .meta.elapsed }}."
-      failed: "The site did not come up. The failing lane above names the step — the build, the deploy or the smoke — and a provider error is in its log."
-    modules: [web, web-tests]
-    # The first phase that DEPLOYS. `requires.probe` asks reality what a lock
-    # file cannot: are both connections live right now?
-    requires:
-      phases: [01-scaffold]
-      probe:
-        - id: providers
-          uses: orun.doctor/check@v1
-          with:
-            providers: [github, cloudflare]
-            githubOwner: "{{ .inputs.githuborg }}"
-            waitSeconds: 600
-            pollSeconds: 20
-    hooks:
-      pre:
-        - id: task
-          uses: orun.task/ensure@v1
-          with:
-            kind: task
-            epic: "{{ .inputs.epicSlug }}"
-            milestone: "{{ .phase.name }}"
-            name: "Deploy the site"
-            prefix: BASE
-            contract: .baseline/tasks/02-site.TaskContract.yaml
-        # Brokered, one hook per template: `integrations/reconcile` mints from
-        # ONE connection with ONE scope template. The deploy lane binds both
-        # keys (the workers-assets composition's `secretBindings`). Keys that
-        # already exist are kept.
+        # The deploy credentials, brokered, one hook per template:
+        # `integrations/reconcile` mints from ONE connection with ONE scope
+        # template. The deploy lane binds both keys (the workers-assets
+        # composition's `secretBindings`). Keys that already exist are kept.
+        # After the link, before the landing whose convergence uses them.
         - id: secret-workers-deploy
           uses: orun.integrations/reconcile@v1
           with:
@@ -580,54 +544,28 @@ phases:
             provider: cloudflare
             keys: [CLOUDFLARE_ACCOUNT_ID]
             template: account-id
-      post:
-        # A RE-RUN PHASE MUST HAVE SOMETHING TO LAND. A convergence can fail
-        # AFTER its PR merged, and the merge has already put every file this
-        # phase places on main; orun derives phase state from the tree, so a
-        # forced re-run lands an EMPTY diff while the site's CI plans
-        # `--changed`. So the phase rewrites ONE trailing marker line in each
-        # component.yaml its contract names — `# orun: redeploy <phase>
-        # <stamp>` — and the landing has a diff. The marker is a deploy
-        # trigger, not state: nothing reads it back.
-        - id: retouch
-          run: ["node", "{{ .baseline.dir }}/tooling/bootstrap/retouch.mjs", "--phase", "{{ .phase.name }}", "--affects", "{{ .baseline.dir }}/.baseline/tasks/02-site.TaskContract.yaml"]
-        # EVERY PHASE BRANDS WHAT IT PLACED, before it lands: orun writes a
-        # phase's files between its pre and post hooks, so they arrive
-        # carrying the baseline's identity after 01-scaffold's rebrand ran.
-        - id: stage
-          run: ["git", "add", "-A"]
-        - id: rebrand
-          run: ["node", "{{ .baseline.dir }}/tooling/rebrand/rebrand.mjs", "--values", ".rebrand/values.json", "--allow-dirty"]
-        - id: restage
-          run: ["git", "add", "-A"]
-        - id: rebrand-verify
-          run: ["node", "{{ .baseline.dir }}/tooling/rebrand/rebrand.mjs", "--verify", "--values", ".rebrand/values.json"]
-        # START FROM THE BASELINE'S COMPLETE LOCKFILE, then let pnpm prune it
-        # to the projects placed so far: re-resolving only what a phase added
-        # costs a cold resolve of the Next.js tree, and the complete lockfile
-        # makes it a prune in seconds. The lockfile carries no identity.
-        - id: pnpm-lockfile-seed
-          run: ["cp", "{{ .baseline.dir }}/pnpm-lock.yaml", "pnpm-lock.yaml"]
-        - id: pnpm-lockfile
-          run: ["pnpm", "install", "--lockfile-only"]
+        # THE SITE IS A PULL REQUEST THAT IS CHECKED, THEN MERGED. This
+        # landing waits for its PR's own CI (orun >= v2.58.6) and merges only
+        # on green — and on a bootstrap branch (`orun/BASE-…`) that CI is
+        # `plan` alone: ci.yml skips the lanes and checks.yml skips its job,
+        # because the merge runs the site's build, tests, deploy and smoke on
+        # main moments later, for real, and the convergence after the merge
+        # is what `await` watches to green.
         - id: land
           uses: orun.pr/land@v1
-          narrate: "The site PR is merged into main."
+          narrate: "The site is merged into main."
           with:
-            # The PR's lane check is `plan`; the convergence this landing
-            # triggers on main is the real gate, and `await` watches it.
-            wait: false
             task: "{{ .phase.hooks.task.outputs.key }}"
             epic: "{{ .inputs.epicSlug }}"
             branchSlug: "{{ .phase.name }}"
-            title: "feat(site): the site on Workers and Static Assets, on stage and prod"
+            title: "feat: {{ .inputs.productname }}, the whole site from the portfolio starter kit"
       await:
         - id: converge
           uses: orun.run/watch@v1
           narrate: "The site built, deployed and passed its smoke, and the convergence run came back green."
           with:
             # The run for the commit THIS landing merged — the branch's newest
-            # run, read the moment the merge returns, is the previous phase's.
+            # run, read the moment the merge returns, may be another push's.
             sha: "{{ .phase.hooks.land.outputs.mergeSha }}"
             repo: "{{ .inputs.githuborg }}/{{ .inputs.reponame }}"
             resumeBudget: 3
@@ -640,13 +578,13 @@ phases:
               - "https://{{ .inputs.reponame }}-web-stage.{{ .inputs.subdomain }}.workers.dev"
               - "https://{{ .inputs.reponame }}-web-prod.{{ .inputs.subdomain }}.workers.dev"
 
-  # Places nothing. It records what the other phases built, from PROBED facts
+  # Places nothing. It records what 01-product built, from PROBED facts
   # rather than from what the blueprint intended — which is why it runs last
-  # and why its verify is the probe 02-site ends on.
+  # and why its verify is the probe 01-product ends on.
   - name: 03-docs
     title: The deployment, recorded
     description: The live-deployment manifest, rendered from probed reality, and the promotion gate put back.
-    expectedMinutes: 4
+    expectedMinutes: 1
     narrate:
       start:  "Now recording what was actually built — probing every URL and writing the deployment manifest into the repository."
       await:  "Probing the live endpoints one last time."
@@ -654,7 +592,7 @@ phases:
       failed: "The deployment record did not land. The site is still live; only the write-up is missing."
     modules: []
     requires:
-      phases: [02-site]
+      phases: [01-product]
     hooks:
       pre:
         - id: task
@@ -667,7 +605,7 @@ phases:
             prefix: BASE
             contract: .baseline/tasks/03-docs.TaskContract.yaml
       post:
-        # THE SITE GOES LIVE WITH ITS PROMOTION GATE. 01-scaffold deferred
+        # THE SITE GOES LIVE WITH ITS PROMOTION GATE. 01-product deferred
         # `prod.promotion.dependsOn: [stage]`; this, the last landing, puts it
         # back, and from here on a change reaches prod only after stage.
         # Restoring touches only intent.yaml's `environments` section, which
@@ -675,11 +613,13 @@ phases:
         # redeploys nothing.
         - id: promotion
           run: ["node", "{{ .baseline.dir }}/tooling/bootstrap/promotion.mjs", "--restore"]
-        # And dev verifies every merge to main again (01-scaffold deferred it).
+        # And dev verifies every merge to main again (01-product deferred it).
         - id: dev-lanes
           run: ["node", "{{ .baseline.dir }}/tooling/bootstrap/dev-lanes.mjs", "--restore"]
         - id: render
           run: ["bash", "{{ .baseline.dir }}/hooks/render-deployment-docs.sh", ".", "{{ .inputs.orunWorkspace }}", "{{ .baseline.dir }}"]
+        # Checked by `plan` alone, like 01-product's: a bootstrap branch skips
+        # the lanes and checks.yml's job, and nothing here builds.
         - id: land
           uses: orun.pr/land@v1
           narrate: "The deployment record is merged into main."

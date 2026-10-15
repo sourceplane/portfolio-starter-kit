@@ -22,7 +22,7 @@ metadata:
     syntax highlighting, an RSS feed, a sitemap, JSON-LD and dynamic Open Graph
     images, built by OpenNext into one Cloudflare Worker with Static Assets,
     and CI that deploys it to stage and prod on merge. One provider, one
-    consent, one token. Live in about fifteen minutes.
+    consent, one token, one landing. Live in about six minutes.
   tags: [portfolio, blog, mdx, cloudflare, nextjs]
 spec:
   source:
@@ -90,7 +90,7 @@ spec:
       example: acme
 
   # ── PREVIEW ONLY. repo-blueprint.yaml's `orun.integrations/reconcile@v1`
-  # hooks mint these, brokered, during 02-site. ─────────────────────────────
+  # hooks mint these, brokered, during 01-product. ──────────────────────────
   # Transcribed from those hooks' own `keys:` and `template:` values, so
   # testing/manifest.test.sh compares this list to the document that mints
   # them. The console renders them read-only: no credential is ever typed,
@@ -114,8 +114,7 @@ spec:
     epicSlug: portfolio-baselining     # = repo-blueprint.yaml's `epicSlug` default
     epicName: "Portfolio baselining — {productname}"
     milestones:
-      - name: 01-scaffold
-      - name: 02-site
+      - name: 01-product
       - name: 03-docs
 
   bootstrap:
@@ -124,7 +123,7 @@ spec:
     blueprint: repo-blueprint.yaml
     # Summed from the phases' expectedMinutes. An estimate until a bootstrap
     # measures it.
-    expectedMinutes: 15
+    expectedMinutes: 6
     tokenChannel: ORUN_TOKEN_FILE   # how a runner hands over its refreshed token
   verify:
     urls:

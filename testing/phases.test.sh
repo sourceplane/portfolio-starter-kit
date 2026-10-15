@@ -4,11 +4,13 @@
 # what the engine can resolve.
 #
 # The partition below is the bootstrap's order, written down a second time on
-# purpose: the order is load-bearing (the site cannot land before the tooling
-# it builds with, and the deployment record cannot be written before the site
-# is live), and a module that drifts into another phase fails at landing time,
-# live, with nothing in this repository having looked wrong. Moving one is a
-# deliberate change, argued in the diff that edits both places.
+# purpose: the order is load-bearing (the deployment record cannot be written
+# before the site is live), and a module that drifts into another phase fails
+# at landing time, live, with nothing in this repository having looked wrong.
+# Moving one is a deliberate change, argued in the diff that edits both places.
+#
+# ONE LANDING BUILDS THE SITE (PK-6, cirrus-baseline baseline-v22's shape):
+# 01-product places every module, and 03-docs only records.
 #
 # Adapted from sourceplane/cirrus-baseline's testing/phases.test.sh: the
 # narration rules and the hook-only rule are Cirrus's, unchanged.
@@ -37,17 +39,16 @@ if not phases:
     sys.exit("repo-blueprint.yaml declares no phases — this check has gone blind")
 
 PARTITION = {
-    "01-scaffold": ["ai-deployment", "ai-operations", "discovery-roots", "github-workflows",
-                    "rebrand-values", "root-gitignore", "root-intent", "root-kiox",
-                    "root-kiox-lock", "root-package-json", "root-pnpm-lock",
-                    "root-pnpm-workspace", "root-readme", "root-turbo", "tooling-eslint",
-                    "tooling-tsconfig", "tooling-wire", "vscode"],
-    "02-site": ["web", "web-tests"],
+    "01-product": ["ai-deployment", "ai-operations", "discovery-roots", "github-workflows",
+                   "rebrand-values", "root-gitignore", "root-intent", "root-kiox",
+                   "root-kiox-lock", "root-package-json", "root-pnpm-lock",
+                   "root-pnpm-workspace", "root-readme", "root-turbo", "tooling-eslint",
+                   "tooling-tsconfig", "tooling-wire", "vscode", "web", "web-tests"],
     "03-docs": [],
 }
 HOOK_ONLY = {"03-docs"}
 # The phases that DEPLOY, and so must give a re-run something to land.
-DEPLOYS = {"02-site"}
+DEPLOYS = {"01-product"}
 
 by_name = {p["name"]: p for p in phases}
 names = [p["name"] for p in phases]
