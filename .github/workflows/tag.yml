@@ -1,0 +1,97 @@
+name: Baseline tag
+
+# CUTS A `baseline-vN` TAG FOR THIS REPOSITORY.
+#
+# A baseline tag is what the platform's registry resolves and what every
+# product bootstrapped from this repository is built out of, so it is cut by a
+# workflow rather than by hand: the version must look like a baseline tag, an
+# existing tag is never moved, and the commit is resolved here, once.
+#
+# Whether a commit is fit to release is decided outside this repository, by
+# whoever cuts the tag; nothing here asks for proof beyond a green `main`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The tag to cut, e.g. baseline-v2."
+        required: true
+        type: string
+      ref:
+        description: "Branch, tag or sha to cut it from. Defaults to main."
+        required: false
+        default: main
+        type: string
+
+concurrency:
+  group: baseline-tag
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Full history: the ref being cut from may be any commit, and a
+          # shallow clone cannot resolve one it did not fetch.
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+
+      - name: the version must look like a baseline tag
+        run: |
+          set -euo pipefail
+          # Refused here rather than by the API, because the API's error for a
+          # malformed ref says nothing about the convention it broke.
+          case "${{ inputs.version }}" in
+            baseline-v[0-9]*) ;;
+            *) echo "✕ '${{ inputs.version }}' is not a baseline-vN tag" >&2; exit 1 ;;
+          esac
+
+      - name: resolve the commit
+        id: commit
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Cutting ${{ inputs.version }} from ${{ inputs.ref }} = $sha"
+
+      - name: the tag must not already exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/tags/${{ inputs.version }}")"
+          if [ "$code" = "200" ]; then
+            echo "✕ ${{ inputs.version }} already exists. A baseline tag is never moved:" >&2
+            echo "  products resolve it, and repointing one changes what a build that" >&2
+            echo "  already shipped was made of. Cut the next number." >&2
+            exit 1
+          fi
+          # Anything other than 200 or 404 means the question was not answered,
+          # and "it probably does not exist" is not a thing to guess about a
+          # tag that is about to be created.
+          [ "$code" = "404" ] || { echo "✕ could not check for the tag (HTTP $code)" >&2; exit 1; }
+
+      - name: cut the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS -X POST --fail-with-body \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/refs" \
+            -d "$(printf '{"ref":"refs/tags/%s","sha":"%s"}' \
+                  "${{ inputs.version }}" "${{ steps.commit.outputs.sha }}")"
+          echo ""
+          echo "✓ ${{ inputs.version }} → ${{ steps.commit.outputs.sha }}"
+          echo "  Next: move the registry row in orun-cloud's infra/baselines-registry/baselines.yaml."

@@ -8,8 +8,8 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 
 | Field | Value |
 |-------|-------|
-| Status | ✅ Shipped — PK0–PK2 landed (#1, #2, #3) |
-| Cluster | **PK** (PK0–PK2) |
+| Status | ✅ Shipped — PK0–PK3 (#1, #2, #3, PK-4) |
+| Cluster | **PK** (PK0–PK3) |
 | Owner(s) | `apps/web` (the site) · `tests/web` (loader, date and sitemap tests) |
 | Builds on | `cirrus-baseline` conventions; the `blog-starter` port's build shape (static-assets incremental cache + `populateCache`) |
 | Upstream | [vercel/examples `solutions/blog`](https://github.com/vercel/examples/tree/main/solutions/blog) (the "Portfolio Starter Kit" template) |
@@ -32,3 +32,4 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 | PK0 — the spec | this doc set and the task contracts | merged on `main` |
 | PK1 — the portfolio on Workers | `apps/web` built by OpenNext, `tests/web`, green checks | `wrangler dev` serves every route incl. `/og` as PNG; Checks green |
 | PK2 — ready to instantiate | README, as-built status | a reader can run, test, preview and deploy it |
+| PK3 — a baseline | card, build document, rename, bootstrap tooling, tests | a new site goes from nothing to live in three phases; Baseline CI green |

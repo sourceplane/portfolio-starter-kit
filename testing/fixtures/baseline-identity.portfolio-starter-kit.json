@@ -1,0 +1,9 @@
+{
+  "_comment": "THE IDENTITY testing/rebrand.test.sh PINS ITS FIXTURES TO. That suite tests the rename ENGINE, and its fixtures spell this baseline's identity out literally; passed as --baseline-identity, a later change to .baseline/identity.json (a baseline promoted under a new name) cannot silently turn every case into a comparison against the wrong FROM side.",
+  "slug": "portfolio-starter-kit",
+  "pascal": "PortfolioStarterKit",
+  "productName": "My Portfolio",
+  "domain": "portfolio-starter-kit.example.com",
+  "subdomain": "your-workers-subdomain",
+  "githubOwner": "sourceplane"
+}

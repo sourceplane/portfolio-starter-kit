@@ -1,0 +1,20 @@
+# Task contract template for the 01-scaffold landing.
+# Unbound to a key on purpose: `orun.task/ensure@v1` seals and attaches it to
+# the key the allocator issues. It lives under `.baseline/`, not `tasks/`,
+# because `tasks/` is this repository's own work tree (`intent.yaml` `work:`),
+# where an unkeyed contract is an error. gates: [] is a DECLARATION — merge
+# alone finishes this task; the main convergence is the gate the bootstrap
+# watches, not one the plane observes as a PR check.
+apiVersion: orun.io/v1
+kind: TaskContract
+spec:
+  goal: The site's repository is born — intent, CI, tooling and identity — and linked to its workspace
+  affects:
+    - intent.yaml
+    - .github/workflows
+    - tooling
+    - .rebrand
+  doneWhen:
+    - repo pushed and main pinned as default
+    - workspace linked (orun cloud link)
+  gates: []

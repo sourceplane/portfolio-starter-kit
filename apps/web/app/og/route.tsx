@@ -1,8 +1,9 @@
 import { ImageResponse } from 'next/og'
+import { SITE_NAME } from 'app/site'
 
 export function GET(request: Request) {
   let url = new URL(request.url)
-  let title = url.searchParams.get('title') || 'Next.js Portfolio Starter'
+  let title = url.searchParams.get('title') || SITE_NAME
 
   return new ImageResponse(
     (

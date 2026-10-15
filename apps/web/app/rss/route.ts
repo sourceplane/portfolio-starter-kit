@@ -1,5 +1,6 @@
 import { baseUrl } from 'app/sitemap'
 import { getBlogPosts } from 'app/blog/utils'
+import { SITE_NAME, escapeXml } from 'app/site'
 
 // Next 15 made GET route handlers dynamic by default; this one reads the
 // posts from the filesystem, which only exists at build time on a Worker, so
@@ -32,7 +33,7 @@ export async function GET() {
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
   <rss version="2.0">
     <channel>
-        <title>My Portfolio</title>
+        <title>${escapeXml(SITE_NAME)}</title>
         <link>${baseUrl}</link>
         <description>This is my portfolio RSS feed</description>
         ${itemsXml}

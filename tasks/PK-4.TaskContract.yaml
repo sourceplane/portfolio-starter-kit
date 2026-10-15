@@ -1,0 +1,31 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-4
+  title: "A baseline"
+spec:
+  goal: The repository is an Orun baseline — a card and a build document that take a new site from nothing to live on stage and prod, branded as its own, with gates that prove it offline
+  affects:
+    - blueprint.yaml
+    - repo-blueprint.yaml
+    - BOOTSTRAP.md
+    - README.md
+    - .baseline/**
+    - tooling/rebrand/**
+    - tooling/bootstrap/**
+    - hooks/**
+    - testing/**
+    - docs/phases/**
+    - ai/context/**
+    - .github/workflows/**
+    - intent.yaml
+    - apps/web/**
+    - tests/web/**
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - orun (the bootstrap floor and the lane pin) reads repo-blueprint.yaml, and the card agrees with it
+    - the leak gate, the offline bootstrap and the end-to-end tier are green in Baseline CI
+    - the as-built status records the departures and what is not yet proven live
+  gates:
+    - checks

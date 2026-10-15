@@ -3,7 +3,7 @@ kind: Intent
 
 metadata:
   name: portfolio-starter-kit
-  description: Vercel's Portfolio Blog Starter (MDX posts, RSS, sitemap, dynamic OG images, Tailwind 4) ported to Cloudflare Workers + Static Assets on the Cirrus baseline conventions
+  description: A portfolio and blog — MDX posts, RSS, a sitemap, JSON-LD and dynamic Open Graph images — on Cloudflare Workers + Static Assets
   namespace: sourceplane
 
 execution:
@@ -14,8 +14,9 @@ execution:
     # enforce claim ⊆ authorized. Declaring it implies strict mode — a
     # non-interactive run that resolves no workspace fails fast.
     #
-    # Replace with this product's own Orun workspace (`orun cloud link`), and
-    # set the `ORUN_CI` repository variable to `true` to turn `ci.yml` on.
+    # `ws_CHANGE_ME` is the one value `ci.yml` treats as "not linked yet" and
+    # plans nothing for. A bootstrap writes the product's workspace here; by
+    # hand, set it to yours (`orun cloud link`) and the Orun pipeline runs.
     workspace: ws_CHANGE_ME
     requireOrg: true
     # Push the resolved catalog after a successful plan on the default branch,
@@ -37,7 +38,7 @@ compositions:
     # without a commit here. Bumping the tag is the deliberate upgrade step.
     - name: stack-tectonic
       kind: oci
-      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.18.2
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.20.0
   resolution:
     precedence:
       - stack-tectonic
@@ -56,6 +57,11 @@ discovery:
 # Where the work lives (initiative-lifecycle): an epic is a directory with an
 # epic.yaml under `epics`, a task a contract under `tasks`; the `orun plan` on
 # main reconciles the tree into the workspace's work plane after a merge.
+#
+# THIS BLOCK IS THE BASELINE'S OWN. A site built from this baseline has no
+# `specs/` and no `tasks/` (its bootstrap work lives on the platform), so
+# 01-scaffold removes the block, and this comment with it, from the
+# product's copy (tooling/bootstrap/work-tree.mjs).
 work:
   epics: specs/epics
   tasks: tasks
@@ -102,18 +108,16 @@ environments:
         - github-push-main
         - local-development
     dependencyMode: advisory
-    parameterDefaults:
-      terraform:
-        lane: verify
-        namespace: sourceplane
-        namespacePrefix: dev-
-        owner: sourceplane
-        repo: portfolio-starter-kit
     policies:
       requireApproval: "false"
     env:
       BASE_DOMAIN: portfolio-starter-kit.example.com
 
+  # SITE_URL, set under an environment's `env:`, is the site's public origin
+  # for that environment's build — sitemap, RSS, Open Graph and JSON-LD links
+  # are absolute. Unset, the build uses the environment's workers.dev URL. Set
+  # it once a custom domain answers for the environment (README, "Custom
+  # domain"); the next deploy of apps/web picks it up.
   stage:
     description: Deployed on every merge to main, before prod.
     url: https://portfolio-starter-kit-web-stage.your-workers-subdomain.workers.dev
@@ -121,13 +125,6 @@ environments:
       triggerRefs:
         - github-pull-request
         - github-push-main
-    parameterDefaults:
-      terraform:
-        lane: verify
-        namespace: sourceplane
-        namespacePrefix: stg-
-        owner: sourceplane
-        repo: portfolio-starter-kit
     policies:
       requireApproval: "false"
     env:
@@ -143,13 +140,6 @@ environments:
     promotion:
       dependsOn:
         - environment: stage
-    parameterDefaults:
-      terraform:
-        lane: verify
-        namespace: sourceplane
-        namespacePrefix: prod-
-        owner: sourceplane
-        repo: portfolio-starter-kit
     policies:
       requireApproval: "false"
     env:
@@ -162,5 +152,5 @@ repo:
   docs:
     overview: README.md
     pages:
-      - { path: specs/epics/portfolio-starter-kit/README.md, role: reference, title: The epic }
-      - { path: specs/epics/portfolio-starter-kit/design.md, role: architecture, title: Design }
+      - { path: ai/context/operations.md, role: runbook, title: Operating contract }
+      - { path: ai/context/deployment.md, role: reference, title: Live deployment manifest }

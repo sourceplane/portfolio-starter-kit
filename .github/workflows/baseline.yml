@@ -1,0 +1,122 @@
+name: Baseline CI
+
+# THE FACTORY'S OWN LANES — this repository tested as a BASELINE: that its
+# build document parses with the orun a bootstrap actually runs, that its card
+# agrees with it, that every component is placed by exactly one phase, that a
+# placed tree comes up branded and carrying nothing of the factory, and that
+# the site it produces installs, builds, deploys (dry) and serves.
+#
+# ─── WHY THIS IS NOT IN ci.yml OR checks.yml ──────────────────────────────
+#
+# `repo-blueprint.yaml`'s `github-workflows` module copies the WHOLE `.github`
+# directory into every site built from this repository. These jobs run
+# `testing/*.sh`, and `testing/` is deliberately not placed — so in a site they
+# would be steps that cannot pass, red on its very first pull request. This
+# file is in the blueprint's `ignore` list, and `testing/coverage.test.sh`
+# fails on any workflow that reads `testing/` and is not.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: baseline-ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Tier 0. bash, python3 and git; node for the tools. No workspace install,
+  # no network, no credential — the job that most certainly fails a PR.
+  baseline-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          # setup-node v5 turns on the pnpm cache by itself when package.json
+          # names a packageManager, and then fails on a runner with no pnpm.
+          # This job installs nothing.
+          package-manager-cache: false
+      - name: Contract tests (manifest, phases, coverage, rebrand, retouch, bootstrap-defer)
+        run: |
+          set -euo pipefail
+          python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
+          for t in manifest phases coverage rebrand retouch bootstrap-defer; do
+            echo "── $t"
+            bash "testing/$t.test.sh"
+          done
+
+  # Tier 1. THE BLUEPRINT, READ AND PLACED BY THE BINARY A BOOTSTRAP RUNS.
+  #
+  # Pinned at the bootstrap floor (BOOTSTRAP.md), not the site's lane pin:
+  # every test here reads YAML with PyYAML, which parses anything well-formed;
+  # only the pinned orun can say whether the document is one a bootstrap can
+  # run. `--status` parses it, validates every hook against the action
+  # registry, compiles every `when` and narration template, and writes
+  # nothing. Then the leak gate (what a site would carry) and the placement
+  # tier (the offline bootstrap: every phase placed and finished by the
+  # blueprint's own hooks, then the site's own `orun plan` for the 02-site
+  # merge).
+  blueprint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: sourceplane/orun-action@v1.2.0
+        with:
+          version: v2.58.11
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: repo-blueprint.yaml, read by the pinned CLI
+        run: |
+          set -euo pipefail
+          orun --version
+          python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
+          # Required inputs must be supplied for the document to resolve; the
+          # values are arbitrary and nothing is written.
+          orun new --blueprint repo-blueprint.yaml --status \
+            --out "$(mktemp -d)" \
+            --set reponame=acme-notes \
+            --set "productname=Acme Notes" \
+            --set productdomain=acme.dev \
+            --set githuborg=acme-inc
+      - name: the leak gate — what a site carries
+        run: bash testing/leak.test.sh
+      - name: placement — the offline bootstrap, and the site's own plan
+        run: |
+          git config --global user.email ci@example.invalid
+          git config --global user.name "baseline ci"
+          bash testing/placement.test.sh
+
+  # Tier 2. THE SITE IT PRODUCES WORKS: the scaffold's landing and the
+  # finished site under the checks their pull requests wait on, the stage
+  # lane's own build, output check and dry deploy, and the built Worker served
+  # and smoke-tested with the component's own smoke command. Pinned at the
+  # site's lane version, because that is the orun the site's CI runs.
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: sourceplane/orun-action@v1.2.0
+        with:
+          version: v2.78.4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: e2e — the bootstrapped site builds, deploys (dry) and serves
+        run: |
+          python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
+          git config --global user.email ci@example.invalid
+          git config --global user.name "baseline ci"
+          bash testing/e2e.test.sh

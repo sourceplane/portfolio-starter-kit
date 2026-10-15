@@ -1,10 +1,10 @@
 name: Checks
 
 # Credential-free verification: install, render the offline wrangler fixtures,
-# typecheck, lint, test and build. Runs on every push and pull request and is
-# the merge gate until the product is linked to an Orun workspace, at which
-# point `ci.yml` (Orun plan/run with brokered Cloudflare credentials) takes
-# over — it stays gated behind the `ORUN_CI` repository variable until then.
+# typecheck, lint, test and build. Runs on every push and pull request, linked
+# or not. `ci.yml` is the Orun pipeline beside it (plan/run with brokered
+# Cloudflare credentials, deploys on merge); it plans nothing until
+# intent.yaml names a workspace.
 on:
   push:
     branches: [main]

@@ -1,5 +1,8 @@
 apiVersion: orun.io/v1
 kind: TaskContract
+metadata:
+  name: PK-2
+  title: "The portfolio on Workers"
 spec:
   goal: The upstream Portfolio Blog Starter runs on Cloudflare Workers + Static Assets with green checks
   affects:
