@@ -37,6 +37,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # setup-node v5 turns on the pnpm cache by itself when package.json
+          # names a packageManager, and then fails on a runner with no pnpm.
+          # This job installs nothing.
+          package-manager-cache: false
       - name: Contract tests (manifest, phases, coverage, rebrand, retouch, bootstrap-defer)
         run: |
           set -euo pipefail
