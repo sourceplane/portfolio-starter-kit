@@ -1,10 +1,11 @@
 import { BlogPosts } from 'app/components/posts'
+import { SITE_NAME } from 'app/site'
 
 export default function Page() {
   return (
     <section>
       <h1 className="mb-8 text-2xl font-semibold tracking-tighter">
-        My Portfolio
+        {SITE_NAME}
       </h1>
       <p className="mb-4">
         {`I'm a Vim enthusiast and tab advocate, finding unmatched efficiency in

@@ -1,0 +1,22 @@
+{
+  "_comment": [
+    "The inputs the placement and leak gates render with. Acme is not a real",
+    "site and never becomes one: this tree is placed into a temp directory,",
+    "asserted against, and deleted. The values are chosen to be AWKWARD rather",
+    "than tidy — a site name with an apostrophe and an ampersand (both legal in",
+    "the card's pattern, both special in TypeScript strings and XML), a",
+    "hyphenated repo slug that CONTAINS the word `portfolio`, an owner other",
+    "than the baseline's, and a multi-label domain — because a fixture that only",
+    "uses values the templates were written against proves the templates work",
+    "on the values they were written against.",
+    "Every key here is an input repo-blueprint.yaml declares. A key it does not",
+    "declare is a fixture that has drifted, and orun refuses it."
+  ],
+  "reponame": "acme-portfolio",
+  "productname": "Sam's Notes & Links",
+  "productdomain": "notes.acme.dev",
+  "githuborg": "acme-inc",
+  "subdomain": "acme",
+  "orunWorkspace": "ws_0000000000000000000000000000000f",
+  "epicSlug": "portfolio-baselining"
+}

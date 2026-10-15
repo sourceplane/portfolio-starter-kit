@@ -26,3 +26,9 @@ spec:
         - "the README says how to run, test, preview and deploy it, and how the site origin and analytics are configured"
         - "the as-built status records every departure from the upstream template"
       tasks: [PK-3]
+    - name: "PK3 — a baseline"
+      exitCriteria:
+        - "blueprint.yaml (the console card) and repo-blueprint.yaml (the build) take a new site from nothing to live on stage and prod in three phases"
+        - "a site built from it carries the site only, renamed throughout to its own name, repository and Worker"
+        - "Baseline CI is green: contract tests, the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the end-to-end tier"
+      tasks: [PK-4]

@@ -1,0 +1,13 @@
+# Task contract template for the 03-docs landing. See 01-scaffold's header.
+apiVersion: orun.io/v1
+kind: TaskContract
+spec:
+  goal: The live deployment is recorded from verified facts as agent-readable state in the site's repo
+  affects:
+    - ai/context/deployment.md
+    - ai/context/operations.md
+    - README.md
+  doneWhen:
+    - committed deployment manifest matches probed reality
+    - prod waits on stage again, and dev verifies every merge to main again
+  gates: []

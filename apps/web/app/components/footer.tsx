@@ -1,3 +1,5 @@
+import { SOURCE_URL } from 'app/site'
+
 function ArrowIcon() {
   return (
     <svg
@@ -46,7 +48,7 @@ export default function Footer() {
             className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
             rel="noopener noreferrer"
             target="_blank"
-            href="https://github.com/sourceplane/portfolio-starter-kit"
+            href={SOURCE_URL}
           >
             <ArrowIcon />
             <p className="ml-2 h-7">view source</p>

@@ -48,4 +48,43 @@ are read at build time.
 
 Comments, a CMS, image optimisation through Cloudflare Images (the template
 uses `next/image` with local files, which OpenNext serves unoptimised), and
-a custom domain (the baseline's `cloudflare-domain` root).
+a custom-domain component (§6: the brokered deploy token carries no zone
+permissions, so attaching a domain is the owner's step, and `SITE_URL` makes
+the build use it).
+
+## 6. The baseline (PK3)
+
+The repository instantiates new sites the way
+[cirrus-baseline](https://github.com/sourceplane/cirrus-baseline) instantiates
+products: a console card (`blueprint.yaml`) the platform renders, a build
+document (`repo-blueprint.yaml`) `orun new` runs, and a rename engine that
+makes the copy somebody else's.
+
+| Cirrus | Here | Why the difference |
+|---|---|---|
+| six phases (scaffold, foundation + data plane, workers, edge + console, domain, docs) | three: `01-scaffold`, `02-site`, `03-docs` | one component deploys; no data plane, no fleet, no bindings |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_D1_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` | no D1 |
+| `07-domain` (parked component) | no domain phase; `SITE_URL` per environment | `workers-deploy` has no DNS or zone scope; `dns-edit` needs zone ids a build does not have |
+| task contracts in `tasks/` | `.baseline/tasks/` | `tasks/` is this repository's own work tree (`intent.yaml` `work:`), where an unkeyed contract is an error |
+| ships its own README | ships `.baseline/product/README.md` as the site's README | this README is about the baseline; a site's owner needs the site's |
+| — | `work-tree.mjs` strips `work:` from the site's intent | a site has no `specs/` or `tasks/` |
+| rebrand rules for a SaaS (console prefix, SDK class, CLI bin, API host) | rules for a site: the source link (owner + repo), the `SITE_NAME` seam, the domain, the subdomain, Worker names, secret refs, the repo slug | the identity this tree actually carries |
+
+**Identity in the app** is two literals in `apps/web/app/site.ts`: `SITE_NAME`
+(the heading, page titles, Open Graph card, RSS channel, JSON-LD author) and
+`SOURCE_URL` (the nav and footer). The rename writes the site name with
+`JSON.stringify`, so any name the card's pattern admits — apostrophes and
+ampersands included — stays a valid string; the RSS channel escapes it.
+
+**The site's CI is on from its first commit.** `ci.yml` used to wait for an
+`ORUN_CI` repository variable, which a bootstrap has no way to set: every site
+would have converged on nothing. It now plans nothing only while
+`intent.yaml` names the placeholder `ws_CHANGE_ME`, which this repository
+carries and no site does (the scaffold writes the site's workspace, or
+`ws_SET_ME`, which fails loudly).
+
+**Testing without the platform.** `testing/lib/bootstrap.sh` places every
+phase and runs the blueprint's own `run:` hooks, read out of the document, so
+the whole bootstrap short of the platform's typed actions runs in CI on every
+pull request; `testing/e2e.test.sh` then builds, dry-deploys and serves what it
+produced and runs the component's own smoke against it.

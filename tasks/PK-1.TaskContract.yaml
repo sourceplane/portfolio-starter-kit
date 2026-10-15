@@ -1,5 +1,8 @@
 apiVersion: orun.io/v1
 kind: TaskContract
+metadata:
+  name: PK-1
+  title: "The spec"
 spec:
   goal: The portfolio-starter-kit epic — declaration, doc set and task contracts — is on main
   affects:

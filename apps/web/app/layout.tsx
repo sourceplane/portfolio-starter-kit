@@ -6,19 +6,20 @@ import { Navbar } from './components/nav'
 import { CloudflareWebAnalytics } from './components/analytics'
 import Footer from './components/footer'
 import { baseUrl } from './sitemap'
+import { SITE_NAME } from './site'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Next.js Portfolio Starter',
-    template: '%s | Next.js Portfolio Starter',
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
   description: 'This is my portfolio.',
   openGraph: {
-    title: 'My Portfolio',
+    title: SITE_NAME,
     description: 'This is my portfolio.',
     url: baseUrl,
-    siteName: 'My Portfolio',
+    siteName: SITE_NAME,
     locale: 'en_US',
     type: 'website',
   },

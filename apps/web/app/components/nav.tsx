@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SOURCE_URL } from 'app/site'
 
 const navItems = {
   '/': {
@@ -7,7 +8,7 @@ const navItems = {
   '/blog': {
     name: 'blog',
   },
-  'https://github.com/sourceplane/portfolio-starter-kit': {
+  [SOURCE_URL]: {
     name: 'source',
   },
 }

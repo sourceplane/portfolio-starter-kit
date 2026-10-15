@@ -8,6 +8,7 @@ the code departed from `design.md` or from the upstream template.
 | PK0 — the spec | ✅ Shipped | [#1](https://github.com/sourceplane/portfolio-starter-kit/pull/1) |
 | PK1 — the portfolio on Workers | ✅ Shipped | [#2](https://github.com/sourceplane/portfolio-starter-kit/pull/2) |
 | PK2 — ready to instantiate | ✅ Shipped | [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3) |
+| PK3 — a baseline | ✅ Shipped | this PR (PK-4) |
 
 ## Departures from the upstream template
 
@@ -50,7 +51,54 @@ The nav's `deploy` item and the footer's `view source` link pointed at the
 Vercel template page; they point at this repository (the nav item reads
 `source`).
 
-## Verified
+### The site's name and source link come from `app/site.ts` (PK3)
+
+`SITE_NAME` replaces the template's two names — "My Portfolio" (heading, Open
+Graph, RSS, JSON-LD author) and "Next.js Portfolio Starter" (the default
+`<title>` and the `/og` fallback) — with one; `SOURCE_URL` replaces the
+repository link in the nav and the footer. They are the seam the baseline's
+rename rewrites. The RSS channel title is XML-escaped.
+
+### `apps/web/README.md` is the app's, not the template's (PK3)
+
+The upstream README advertised "Deploy with Vercel" and a Vercel demo, and it
+ships into every site. It now describes the app and credits the template (MIT).
+
+## Departures from the port (PK3)
+
+| What | Before | After | Why |
+|---|---|---|---|
+| `apps/web` build origin | `${WORKERS_DEV_SUBDOMAIN}` | the subdomain literal, behind `${SITE_URL:-…}` | the composition exports the subdomain to the smoke step only (risks PK-I) |
+| `apps/web` smoke | `grep 'My Portfolio'` | the nav's `/blog` link, and `/rss` is a feed | the name is the owner's, and HTML-escaped when it carries `&` or `'` |
+| `ci.yml` gate | `vars.ORUN_CI == 'true'` | skip only while `intent.yaml` names `ws_CHANGE_ME` | a bootstrap cannot set a repository variable |
+| stack-tectonic | 0.18.2 | 0.20.0 | first-deploy retry (0.19.0), one install per lane (0.20.0) — cirrus-baseline's pin |
+| orun lane pin | v2.78.0 | v2.78.4 | cirrus-baseline's pin |
+| `intent.yaml` | terraform `parameterDefaults`; docs pages under `specs/` | neither; docs pages `ai/context/*` | no terraform component; the pages must exist in a site |
+| `tasks/PK-1..3` | no `metadata` | `metadata.name` and `title` | `orun work check` (≥ v2.79) refused them |
+
+## Verified (PK3)
+
+- `orun new --status` reads the blueprint at v2.58.11 (the bootstrap floor),
+  v2.78.4 (the lane pin) and v2.79.0.
+- `testing/{manifest,phases,coverage,rebrand,retouch,bootstrap-defer}.test.sh`
+  green; `orun work check` clean.
+- `testing/leak.test.sh`: 65 files derived; nothing of the factory, nothing
+  local or built; no provenance prose.
+- `testing/placement.test.sh` (offline bootstrap, fixture "Sam's Notes &
+  Links" / `acme-inc/acme-portfolio`): three landings; rebrand `--verify`
+  clean; workspace re-tenanted, `work:` stripped, promotion and dev lanes
+  restored; deployment record rendered; the site's own `orun plan` for the
+  02-site merge deploys `web` to stage and prod side by side with the site's
+  origin, Worker name, smoke and secret refs; `--resume` changes nothing.
+- `testing/e2e.test.sh`: the scaffold's landing and the finished site pass
+  the Checks sequence; the stage lane's `build-app`, `verify-build-output` and
+  `deploy-dry-run` pass; `wrangler dev` serves the built Worker; the
+  component's own smoke passes; `/`, `/blog`, a post, a 404, `/rss` (well-formed
+  with the escaped name), `/sitemap.xml` (absolute on the stage origin),
+  `/robots.txt` and `/og` (PNG) are the site's own.
+- Not verified: a live bootstrap against a workspace (risks PK-G).
+
+## Verified (PK1–PK2)
 
 - Local: `pnpm typecheck`, `pnpm lint`, `pnpm test` (3 tests), `pnpm build`
   green; `wrangler dev` over `.open-next/worker.js`: `/`, `/blog`,

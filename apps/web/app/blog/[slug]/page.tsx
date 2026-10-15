@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { CustomMDX } from 'app/components/mdx'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { baseUrl } from 'app/sitemap'
+import { SITE_NAME } from 'app/site'
 
 // Every post is rendered at build time. On Workers there is no filesystem at
 // request time, so an unknown slug is a 404 rather than an on-demand render.
@@ -83,7 +84,7 @@ export default async function Blog({ params }) {
             url: `${baseUrl}/blog/${post.slug}`,
             author: {
               '@type': 'Person',
-              name: 'My Portfolio',
+              name: SITE_NAME,
             },
           }),
         }}
