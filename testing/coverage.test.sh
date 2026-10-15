@@ -133,6 +133,35 @@ for wf in workflows:
             f"and is not in the blueprint's ignore list — so it ships into every "
             f'product and fails there. Add "**/{rel}" to ignore.')
 
+# ONE WORKFLOW ON A PUSH TO MAIN, in what a product carries. The bootstrap
+# watches each phase's convergence with `orun.run/watch@v1` and `sha:`, which
+# takes the newest workflow run for the merge commit — from any workflow. A
+# second one on push (checks.yml did this) can be the run it finds: the first
+# live bootstrap watched Checks go green while ci.yml's deploy lanes had
+# failed. So every shipped workflow but ci.yml stays off pushes to main.
+import yaml as _yaml
+on_push = []
+for wf in workflows:
+    rel = f".github/workflows/{wf.name}"
+    if f"**/{rel}" in ignored or rel in ignored:
+        continue  # the factory's own; never in a product
+    doc = _yaml.safe_load(wf.read_text(encoding="utf-8")) or {}
+    on = doc.get("on", doc.get(True))  # PyYAML reads a bare `on:` key as True
+    if isinstance(on, str):
+        on = {on: None}
+    elif isinstance(on, list):
+        on = {k: None for k in on}
+    push = (on or {}).get("push", "absent")
+    if push == "absent":
+        continue
+    branches = (push or {}).get("branches") if isinstance(push, dict) else None
+    if branches is None or "main" in branches:
+        on_push.append(wf.name)
+if on_push != ["ci.yml"]:
+    bad(f"the workflows a product runs on a push to main are {on_push or 'none'}; "
+        f"it must be exactly ci.yml — orun.run/watch@v1 watches the newest run "
+        f"for a commit from ANY workflow, so a second one hides the convergence")
+
 if problems:
     print("FAIL: the blueprint and this repository disagree about what a product is:",
           file=sys.stderr)

@@ -103,7 +103,7 @@ Add a post by dropping an `.mdx` file with front matter (`title`,
 
 | Workflow | What it runs | Ships to a site |
 |---|---|---|
-| `checks.yml` | install, wire fixtures, typecheck, lint, test, build — every push and PR | yes |
+| `checks.yml` | install, wire fixtures, typecheck, lint, test, build — every PR (not pushes: on main, `ci.yml` must be the only run a commit has, because the bootstrap's convergence watch takes the newest one) | yes |
 | `ci.yml` | the Orun pipeline: `orun plan --changed`, then one job per lane; deploys stage → prod on merge. It plans nothing while `intent.yaml` names the placeholder workspace `ws_CHANGE_ME`, as this repository does | yes |
 | `baseline.yml` | the baseline's own tiers: contract tests, the blueprint read by the pinned orun, the leak gate, the offline bootstrap, the site built, dry-deployed and served | no |
 | `tag.yml` | cuts a `baseline-vN` tag (manual) | no |

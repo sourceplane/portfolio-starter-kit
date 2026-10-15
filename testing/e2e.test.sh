@@ -14,7 +14,14 @@
 #      pull request (the verify profile) `build-app` — the component's
 #      buildCommand, origin and all, the same step the deploy profile runs —
 #      `verify-build-output` and `deploy-dry-run` (`wrangler deploy --dry-run
-#      --name <reponame>-web-stage`);
+#      --name <reponame>-web-stage`). They run IN THE TREE THE RUNNER STAGES
+#      for the job (testing/lib/stage-job.py), with the dependency layout the
+#      pinned composition produces: if its install step is `scope: lane`, the
+#      top-level node_modules is a symlink to the source checkout's; if not,
+#      the job's own install step runs inside the staged tree. Run in a plain
+#      checkout, this tier was green while the first live bootstrap's lanes
+#      died in the lane layout (Turbopack: "Symlink … points out of the
+#      filesystem root");
 #   4. serve the built Worker with `wrangler dev` and run the component's OWN
 #      `smokeCommand` against it, verbatim — the check the real deploy ends
 #      with — and then read every route the site promises: the heading and
@@ -106,16 +113,41 @@ job = next(j for j in plan["jobs"] if j["component"] == "web" and j["environment
 for s in job["steps"]:
     if s["id"] in ("build-app", "verify-build-output", "deploy-dry-run"):
         (out / f"{s['id']}.sh").write_text(s.get("run") or "")
+    if s["id"] == "install-workspace-dependencies":
+        (out / "install.sh").write_text(s.get("run") or "")
+        (out / "install.wd").write_text(s.get("working-directory") or ".")
+        (out / "install.scope").write_text(s.get("scope") or "job")
 (out / "path").write_text(job.get("path") or "apps/web")
 for k, v in (job.get("env") or {}).items():
     (out / "env").open("a").write(f"export {k}={json.dumps(v)}\n")
 PY
+# The job's private tree, staged as orun stages it. The source checkout
+# carries no build output (a CI checkout has none, so the plain-tree build's is
+# removed rather than copied in), and its dependencies are what the pinned
+# composition says: a lane-scoped install ran once in the source tree (step 2
+# ran the same command) and is linked in, or the job installs its own.
+rm -rf "$tree/apps/web/.open-next" "$tree/apps/web/.wrangler"
+work="$tree/.orun/runs/e2e/web.stage.verify-deploy/work"
+[ -f "$scratch/steps/install.sh" ] || { echo "FAIL: the stage lane has no install step" >&2; exit 1; }
+if [ "$(cat "$scratch/steps/install.scope")" = lane ]; then
+  python3 "$here/lib/stage-job.py" "$tree" "$work" --shared-deps
+  [ -L "$work/node_modules" ] || { echo "FAIL: the staged tree's node_modules is not the lane's symlink" >&2; exit 1; }
+  echo "   staged: $(realpath --relative-to="$tree" "$work"); install scope: lane — node_modules → the source tree's"
+else
+  python3 "$here/lib/stage-job.py" "$tree" "$work"
+  echo "   staged: $(realpath --relative-to="$tree" "$work"); install scope: job — installing inside it"
+  echo "   ▸ install-workspace-dependencies"
+  (cd "$work/$(cat "$scratch/steps/path")/$(cat "$scratch/steps/install.wd")" && bash -e "$scratch/steps/install.sh") \
+    > "$scratch/install.log" 2>&1 || { echo "FAIL: the lane's install step" >&2; tail -30 "$scratch/install.log" >&2; exit 1; }
+  [ -d "$work/node_modules" ] && [ ! -L "$work/node_modules" ] \
+    || { echo "FAIL: the job's install did not land inside its own tree" >&2; exit 1; }
+fi
 for step in build-app verify-build-output deploy-dry-run; do
   [ -f "$scratch/steps/$step.sh" ] || { echo "FAIL: the stage verify lane has no $step step" >&2; exit 1; }
   echo "   ▸ $step"
   # The runner's per-job environment: the job's env (intent environment
   # `env:`) and ORUN_ENVIRONMENT; the step runs in the component's directory.
-  if ! (cd "$tree/$(cat "$scratch/steps/path")" && \
+  if ! (cd "$work/$(cat "$scratch/steps/path")" && \
         { [ -f "$scratch/steps/env" ] && source "$scratch/steps/env"; true; } && \
         export ORUN_ENVIRONMENT=stage && bash -e "$scratch/steps/$step.sh") > "$scratch/$step.log" 2>&1; then
     echo "FAIL: the deploy lane's $step step" >&2; tail -40 "$scratch/$step.log" >&2; exit 1
@@ -125,7 +157,7 @@ done
 # ── 4. serve it, and smoke it as the deploy does ───────────────────────────
 echo "── wrangler dev over the built Worker"
 port=$(python3 -c "import socket;s=socket.socket();s.bind(('127.0.0.1',0));print(s.getsockname()[1]);s.close()")
-(cd "$tree/apps/web" && exec setsid pnpm exec wrangler dev --config wrangler.jsonc --ip 127.0.0.1 --port "$port" \
+(cd "$work/apps/web" && exec setsid pnpm exec wrangler dev --config wrangler.jsonc --ip 127.0.0.1 --port "$port" \
    --name "$repo-web-stage" --show-interactive-dev-session=false) > "$scratch/dev.log" 2>&1 < /dev/null &
 dev_pid=$!
 url="http://127.0.0.1:$port"

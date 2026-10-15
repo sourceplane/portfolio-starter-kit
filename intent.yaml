@@ -36,9 +36,23 @@ compositions:
     # explicit version: a bare repository reference resolves to `:latest`,
     # which would let a catalog release change this repo's execution contracts
     # without a commit here. Bumping the tag is the deliberate upgrade step.
+    #
+    # 0.19.0, NOT 0.20.0 (cirrus-baseline's pin). 0.20.0 makes the workspace
+    # install lane-scoped: it runs once in the source checkout and every job's
+    # staged tree LINKS its top-level node_modules there — out of the tree. Next
+    # 16 builds with Turbopack, which refuses a dependency that resolves outside
+    # its root ("Symlink apps/web/node_modules/next is invalid, it points out of
+    # the filesystem root"): the first live bootstrap's lanes died on it. A
+    # webpack build gets past the symlink but breaks next/og on Workers (its
+    # Node build reads fonts and compiles wasm at runtime), and turbopack.root
+    # cannot move without moving outputFileTracingRoot, and OpenNext's standalone
+    # layout with it. Under 0.19.0 the job installs inside its own tree, and the
+    # site has one job per lane (`lane: isolated`), so the shared install would
+    # save nothing anyway. testing/e2e.test.sh stages the job with whichever
+    # layout the pinned composition plans, so a bump is tested, not assumed.
     - name: stack-tectonic
       kind: oci
-      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.20.0
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.19.0
   resolution:
     precedence:
       - stack-tectonic

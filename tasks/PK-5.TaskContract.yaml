@@ -1,0 +1,22 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-5
+  title: "What the first live bootstrap found"
+spec:
+  goal: A site bootstrapped from the baseline deploys and its convergence is watched truthfully — the deploy lanes build in the tree orun stages, and a push to main runs one workflow
+  affects:
+    - intent.yaml
+    - .github/workflows/checks.yml
+    - .baseline/product/README.md
+    - README.md
+    - BOOTSTRAP.md
+    - testing/**
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - testing/e2e.test.sh builds in a job tree staged as orun stages it, red on baseline-v1's composition pin and green on the fix
+    - no shipped workflow but ci.yml runs on a push to main, held by testing/coverage.test.sh
+    - baseline-v2 is cut and the registry row moved to it
+  gates:
+    - checks

@@ -68,6 +68,8 @@ makes the copy somebody else's.
 | task contracts in `tasks/` | `.baseline/tasks/` | `tasks/` is this repository's own work tree (`intent.yaml` `work:`), where an unkeyed contract is an error |
 | ships its own README | ships `.baseline/product/README.md` as the site's README | this README is about the baseline; a site's owner needs the site's |
 | — | `work-tree.mjs` strips `work:` from the site's intent | a site has no `specs/` or `tasks/` |
+| stack-tectonic 0.20.0 (lane-scoped install) | 0.19.0 (the job installs in its own tree) | Next 16's Turbopack cannot build through the lane's symlinked `node_modules` (risks PK-J) |
+| one push workflow (`ci.yml`) | `checks.yml` on pull requests only | `orun.run/watch@v1` takes the newest run for a commit from any workflow (risks PK-K) |
 | rebrand rules for a SaaS (console prefix, SDK class, CLI bin, API host) | rules for a site: the source link (owner + repo), the `SITE_NAME` seam, the domain, the subdomain, Worker names, secret refs, the repo slug | the identity this tree actually carries |
 
 **Identity in the app** is two literals in `apps/web/app/site.ts`: `SITE_NAME`

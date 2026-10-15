@@ -60,7 +60,8 @@ against the workspace in `intent.yaml`. The site deploys to `stage`, then to
 `prod` once stage has converged on the same commit; `dev` only verifies. The
 Worker is `portfolio-starter-kit-web-<env>` on your account's workers.dev
 subdomain, and every deploy is smoke-tested over HTTP. `checks.yml` runs
-install, typecheck, lint, test and build on every push and pull request.
+install, typecheck, lint, test and build on every pull request. (A push to
+`main` runs `ci.yml` alone, which builds, tests and deploys.)
 
 The pipeline holds one credential, GitHub's own `GITHUB_TOKEN`. The
 Cloudflare token and account id are brokered per run from the workspace's
