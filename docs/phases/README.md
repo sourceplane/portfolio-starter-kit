@@ -29,7 +29,9 @@ intent, every component and every composition resolve — and skips the lanes,
 because the merge runs them on main a minute later, for real, and that
 convergence is what the phase watches. `checks.yml` (install, typecheck, lint,
 test, build) skips its job on those branches for the same reason — the
-convergence builds and tests the site — and runs on every other pull request.
+convergence builds, deploys and smoke-tests the site, and the baseline's own
+CI ran these checks over a bootstrapped tree at the tag being built — and runs
+on every other pull request.
 So each landing waits for `plan` alone, a few seconds, and merges.
 
 | phase | lands | verified by |

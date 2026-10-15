@@ -548,7 +548,7 @@ phases:
         # landing waits for its PR's own CI (orun >= v2.58.6) and merges only
         # on green — and on a bootstrap branch (`orun/BASE-…`) that CI is
         # `plan` alone: ci.yml skips the lanes and checks.yml skips its job,
-        # because the merge runs the site's build, tests, deploy and smoke on
+        # because the merge runs the site's build, deploy and smoke on
         # main moments later, for real, and the convergence after the merge
         # is what `await` watches to green.
         - id: land

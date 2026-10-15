@@ -27,7 +27,7 @@
 # product and runs its smoke against it.
 #
 # Needs: orun, node, pnpm, python3 (+PyYAML), git. No credential. The pnpm
-# lockfile prune and the deployment-record probes reach the network if they
+# lockfile check and the deployment-record probes reach the network if they
 # can, and pass without it.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"

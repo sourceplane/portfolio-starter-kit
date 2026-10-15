@@ -19,6 +19,6 @@ spec:
     - web-tests
   doneWhen:
     - repo pushed, main pinned as default, workspace linked (orun cloud link)
-    - main convergence green (build, tests, deploy and smoke on stage and prod)
+    - main convergence green (build, deploy and smoke on stage and prod)
     - the home page answers on both workers.dev URLs
   gates: []

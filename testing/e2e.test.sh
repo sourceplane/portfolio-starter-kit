@@ -8,7 +8,8 @@
 #      install with the committed lockfile, render fixtures, typecheck, lint,
 #      test, build. The bootstrap's own landings do not wait on it (on a
 #      `orun/BASE-…` branch the job is skipped and `plan` is the check; the
-#      convergence on main builds and tests the site), so this is the gate
+#      convergence on main builds, deploys and smoke-tests the site), so this
+#      tier is where they run over a bootstrapped tree, and the gate
 #      every LATER pull request of the site meets;
 #   2. the stage lane's own steps, rendered by `orun plan` in the site: on a
 #      pull request (the verify profile) `build-app` — the component's
