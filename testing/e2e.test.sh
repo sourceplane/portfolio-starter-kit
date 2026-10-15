@@ -122,7 +122,7 @@ PY
 # The job's private tree, staged as orun stages it. The source checkout
 # carries no build output (a CI checkout has none, so the plain-tree build's is
 # removed rather than copied in), and its dependencies are what the pinned
-# composition says: a lane-scoped install ran once in the source tree (step 2
+# composition says: a lane-scoped install ran once in the source tree (step 1
 # ran the same command) and is linked in, or the job installs its own.
 rm -rf "$tree/apps/web/.open-next" "$tree/apps/web/.wrangler"
 work="$tree/.orun/runs/e2e/web.stage.verify-deploy/work"
