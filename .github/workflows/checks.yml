@@ -1,14 +1,21 @@
 name: Checks
 
 # Credential-free verification: install, render the offline wrangler fixtures,
-# typecheck, lint, test and build. Runs on every push and pull request, linked
-# or not. `ci.yml` is the Orun pipeline beside it (plan/run with brokered
-# Cloudflare credentials, deploys on merge); it plans nothing until
-# intent.yaml names a workspace.
+# typecheck, lint, test and build, on every pull request, linked or not.
+# `ci.yml` is the Orun pipeline beside it (plan/run with brokered Cloudflare
+# credentials, deploys on merge); it plans nothing until intent.yaml names a
+# workspace.
+#
+# PULL REQUESTS ONLY — not pushes to main. A push to main must start exactly
+# one workflow, `ci.yml`, because the bootstrap's convergence watch
+# (`orun.run/watch@v1` with `sha:`) takes the newest run for the merge commit
+# from ANY workflow. With this one on push too, the first live bootstrap
+# watched this run go green while ci.yml's deploy lanes had failed, and called
+# the site converged. On main the convergence builds and tests the site
+# anyway. The baseline's coverage gate holds the rule.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: checks-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}

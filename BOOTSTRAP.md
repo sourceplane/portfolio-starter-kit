@@ -183,3 +183,5 @@ at the tag and refuses the whole catalogue if it 404s.
 | A bootstrap stopped before `03-docs`; prod no longer waits on stage | the gate is deferred, not dropped: run `03-docs`, or `node tooling/bootstrap/promotion.mjs --restore --file <site>/intent.yaml` |
 | `✕ input "productdomain" is required` | all four required inputs must be set on every invocation, single-phase ones included |
 | `unknown flag: --phase` or a parse error in the blueprint | the CLI is below the v2.58.11 floor |
+| `02-site` lanes fail in `build-app`: `Symlink apps/web/node_modules/next is invalid, it points out of the filesystem root` | the site's intent pins stack-tectonic ≥ 0.20.0, whose lane-scoped install links each job's node_modules out of its tree, which Next 16's Turbopack refuses. Pin 0.19.0 (baseline-v2 does; `intent.yaml` says why) |
+| `02-site`'s convergence reported green, then `verify` got 404 from both URLs | a second workflow ran on the push to main and the watch took its run (baseline-v1's `checks.yml`). baseline-v2 runs `checks.yml` on pull requests only; read the CI run on main for the real result |

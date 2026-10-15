@@ -9,7 +9,7 @@ metadata:
 spec:
   title: "Vercel's Portfolio Blog Starter on Cloudflare Workers"
   summary: "The Vercel Portfolio Blog Starter — MDX posts rendered with next-mdx-remote, syntax highlighting, an RSS feed, a sitemap and robots, JSON-LD, dynamic Open Graph images from next/og, Geist fonts and Tailwind 4 — runs on Cloudflare Workers + Static Assets through @opennextjs/cloudflare inside the Cirrus baseline's repository conventions. It is the content-site port that carries the shapes the blog-starter port left out: a route handler that renders images at request time, a feed, and absolute links that must know the site's origin."
-  state: completed
+  state: started
   milestones:
     - name: "PK0 — the spec"
       exitCriteria:
@@ -32,3 +32,8 @@ spec:
         - "a site built from it carries the site only, renamed throughout to its own name, repository and Worker"
         - "Baseline CI is green: contract tests, the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the end-to-end tier"
       tasks: [PK-4]
+    - name: "PK4 — proven live"
+      exitCriteria:
+        - "a site bootstrapped from the registered tag is live on stage and prod, its deployment record on main"
+        - "what the first live bootstrap found is fixed, and the tests that missed it now reproduce it"
+      tasks: [PK-5]

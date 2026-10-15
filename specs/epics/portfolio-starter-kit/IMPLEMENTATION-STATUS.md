@@ -8,7 +8,8 @@ the code departed from `design.md` or from the upstream template.
 | PK0 — the spec | ✅ Shipped | [#1](https://github.com/sourceplane/portfolio-starter-kit/pull/1) |
 | PK1 — the portfolio on Workers | ✅ Shipped | [#2](https://github.com/sourceplane/portfolio-starter-kit/pull/2) |
 | PK2 — ready to instantiate | ✅ Shipped | [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3) |
-| PK3 — a baseline | ✅ Shipped | this PR (PK-4) |
+| PK3 — a baseline | ✅ Shipped | [#4](https://github.com/sourceplane/portfolio-starter-kit/pull/4) (PK-4), tagged `baseline-v1` |
+| PK4 — proven live | 🟡 In progress | this PR (PK-5), to be tagged `baseline-v2` |
 
 ## Departures from the upstream template
 
@@ -75,6 +76,19 @@ ships into every site. It now describes the app and credits the template (MIT).
 | orun lane pin | v2.78.0 | v2.78.4 | cirrus-baseline's pin |
 | `intent.yaml` | terraform `parameterDefaults`; docs pages under `specs/` | neither; docs pages `ai/context/*` | no terraform component; the pages must exist in a site |
 | `tasks/PK-1..3` | no `metadata` | `metadata.name` and `title` | `orun work check` (≥ v2.79) refused them |
+
+## The first live bootstrap (PK4)
+
+`baseline-v1`, registered unlisted, built in workspace
+`test-portfolio-starter-kit`: `01-scaffold` landed; `02-site` stopped at its
+final probe (404 on both workers.dev URLs). Two findings, both fixed here
+(risks PK-J, PK-K):
+
+| Finding | Cause | Fix |
+|---|---|---|
+| both deploy lanes failed `build-app` | stack-tectonic 0.20.0's lane-scoped install links each job's `node_modules` out of its staged tree; Next 16's Turbopack refuses it | pin stack-tectonic 0.19.0 (the job installs inside its own tree) |
+| the watch reported the convergence green | `orun.run/watch@v1` took `checks.yml`'s run for the commit | `checks.yml` on pull requests only; a gate that only `ci.yml` runs on push |
+| the tests passed anyway | e2e replayed the lane in a plain checkout | e2e stages the job as orun does (`testing/lib/stage-job.py`), with the planned install layout: red on 0.20.0, green on 0.19.0 |
 
 ## Verified (PK3)
 
