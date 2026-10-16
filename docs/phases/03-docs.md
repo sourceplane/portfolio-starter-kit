@@ -1,10 +1,10 @@
 # 03-docs — the deployment, recorded
 
-**Places** nothing. Its work is hooks: it records what `02-site` built, from
+**Places** nothing. Its work is hooks: it records what `01-product` built, from
 probed facts rather than from what the blueprint intended, and it puts back
-the two things `01-scaffold` deferred for the bootstrap's sake.
+the two things `01-product` deferred for the bootstrap's sake.
 
-**Requires** `02-site` placed. (A hook-only phase derives as `unknown`, so no
+**Requires** `01-product` placed. (A hook-only phase derives as `unknown`, so no
 phase may require this one.)
 
 ## What runs
@@ -15,8 +15,8 @@ phase may require this one.)
 | `promotion` | restores `environments.prod.promotion` — from now on prod deploys only after stage |
 | `dev-lanes` | restores dev's activation on pushes to main |
 | `render` | `hooks/render-deployment-docs.sh`: probes `/` and `/rss` on both environments (and each `SITE_URL`, when set), lists the secrets by name and the workspace's integrations, and regenerates `ai/context/deployment.md` and the README's live-deployment section |
-| `land` | one PR, waited for and merged. It touches no component, so it deploys nothing |
-| `verify` (await) | the same probe `02-site` ended on |
+| `land` | one PR, checked by `plan` alone and merged on green. It touches no component, so it deploys nothing |
+| `verify` (await) | the same probe `01-product` ended on |
 
 ## Re-running it
 

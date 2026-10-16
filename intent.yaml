@@ -74,7 +74,7 @@ discovery:
 #
 # THIS BLOCK IS THE BASELINE'S OWN. A site built from this baseline has no
 # `specs/` and no `tasks/` (its bootstrap work lives on the platform), so
-# 01-scaffold removes the block, and this comment with it, from the
+# 01-product removes the block, and this comment with it, from the
 # product's copy (tooling/bootstrap/work-tree.mjs).
 work:
   epics: specs/epics

@@ -4,13 +4,14 @@
 # placement.test.sh proves the tree a bootstrap ends with is the right tree.
 # This proves it WORKS, by doing to it what its own pipelines will:
 #
-#   1. at the 01-scaffold landing (the commit its first PR merges), run what
-#      `checks.yml` runs on that PR — install with the lockfile the phase
-#      pruned, render fixtures, typecheck, lint, test, build. That landing
-#      WAITS on its checks, so a scaffold they refuse is a bootstrap that never
-#      gets past phase one;
-#   2. at the finished site, the same Checks sequence;
-#   3. the stage lane's own steps, rendered by `orun plan` in the site: on a
+#   1. at the finished site, what `checks.yml` runs on a pull request —
+#      install with the committed lockfile, render fixtures, typecheck, lint,
+#      test, build. The bootstrap's own landings do not wait on it (on a
+#      `orun/BASE-…` branch the job is skipped and `plan` is the check; the
+#      convergence on main builds, deploys and smoke-tests the site), so this
+#      tier is where they run over a bootstrapped tree, and the gate
+#      every LATER pull request of the site meets;
+#   2. the stage lane's own steps, rendered by `orun plan` in the site: on a
 #      pull request (the verify profile) `build-app` — the component's
 #      buildCommand, origin and all, the same step the deploy profile runs —
 #      `verify-build-output` and `deploy-dry-run` (`wrangler deploy --dry-run
@@ -22,7 +23,7 @@
 #      checkout, this tier was green while the first live bootstrap's lanes
 #      died in the lane layout (Turbopack: "Symlink … points out of the
 #      filesystem root");
-#   4. serve the built Worker with `wrangler dev` and run the component's OWN
+#   3. serve the built Worker with `wrangler dev` and run the component's OWN
 #      `smokeCommand` against it, verbatim — the check the real deploy ends
 #      with — and then read every route the site promises: the heading and
 #      title carry the site's name, the nav links the site's repository, the
@@ -34,7 +35,8 @@
 # bootstrap against a workspace (BOOTSTRAP.md); everything short of it is here.
 #
 # Needs: orun, node, pnpm, python3 (+PyYAML), git, curl, and the network for
-# `pnpm install` (or a warm store). A few minutes: two installs and builds.
+# `pnpm install` (or a warm store). A few minutes: two installs and builds
+# (the Checks over the site, and the stage lane's own in its staged tree).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
@@ -88,22 +90,19 @@ echo "── the offline bootstrap (testing/lib/bootstrap.sh)"
 tree="$scratch/$repo"
 bootstrap_offline "$root" "$tree" "$values" "$scratch/logs" > "$scratch/bootstrap.log" 2>&1 || {
   echo "FAIL: the offline bootstrap stopped" >&2; tail -40 "$scratch/bootstrap.log" >&2; exit 1; }
-echo "   3 phases placed and landed"
+echo "   2 phases placed and landed"
 
-# ── 1. the scaffold's own pull request ─────────────────────────────────────
-echo "── 01-scaffold's landing, under the checks its PR waits on"
-git -C "$tree" worktree add -q "$scratch/at-01" "$(git -C "$tree" rev-parse HEAD~2)"
-checks "$scratch/at-01" "$scratch/checks-01.log"
-
-# ── 2. the finished site ───────────────────────────────────────────────────
-echo "── the finished site, under the same checks"
+# ── 1. the finished site ───────────────────────────────────────────────────
+echo "── the finished site, under the checks a pull request of it runs"
 checks "$tree" "$scratch/checks-site.log"
 
-# ── 3. the deploy lane's steps, for stage ──────────────────────────────────
+# ── 2. the deploy lane's steps, for stage ──────────────────────────────────
 echo "── the stage lane: build-app, verify-build-output, deploy-dry-run"
-s01="$(git -C "$tree" rev-parse HEAD~2)"; s02="$(git -C "$tree" rev-parse HEAD~1)"
+# The 01-product landing over the repository's empty first commit: every file
+# of the site changed, as on its pull request.
+s00="$(git -C "$tree" rev-parse HEAD~2)"; s01="$(git -C "$tree" rev-parse HEAD~1)"
 (cd "$tree" && orun plan --intent intent.yaml --trigger github-pull-request --changed \
-   --base "$s01" --head "$s02" --env stage --output "$scratch/plan.json") > "$scratch/plan.log" 2>&1 \
+   --base "$s00" --head "$s01" --env stage --output "$scratch/plan.json") > "$scratch/plan.log" 2>&1 \
   || { echo "FAIL: orun plan" >&2; tail -15 "$scratch/plan.log" >&2; exit 1; }
 python3 - "$scratch/plan.json" "$scratch/steps" <<'PY'
 import json, pathlib, sys
@@ -124,7 +123,7 @@ PY
 # The job's private tree, staged as orun stages it. The source checkout
 # carries no build output (a CI checkout has none, so the plain-tree build's is
 # removed rather than copied in), and its dependencies are what the pinned
-# composition says: a lane-scoped install ran once in the source tree (step 2
+# composition says: a lane-scoped install ran once in the source tree (step 1
 # ran the same command) and is linked in, or the job installs its own.
 rm -rf "$tree/apps/web/.open-next" "$tree/apps/web/.wrangler"
 work="$tree/.orun/runs/e2e/web.stage.verify-deploy/work"
@@ -154,7 +153,7 @@ for step in build-app verify-build-output deploy-dry-run; do
   fi
 done
 
-# ── 4. serve it, and smoke it as the deploy does ───────────────────────────
+# ── 3. serve it, and smoke it as the deploy does ───────────────────────────
 echo "── wrangler dev over the built Worker"
 port=$(python3 -c "import socket;s=socket.socket();s.bind(('127.0.0.1',0));print(s.getsockname()[1]);s.close()")
 (cd "$work/apps/web" && exec setsid pnpm exec wrangler dev --config wrangler.jsonc --ip 127.0.0.1 --port "$port" \

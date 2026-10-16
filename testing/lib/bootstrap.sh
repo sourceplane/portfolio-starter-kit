@@ -10,12 +10,16 @@
 #   - the typed actions (`uses:` — task, repo, reconcile, land, watch, probe)
 #     are skipped; a landing becomes a commit on `main`, which is what the
 #     next phase's placement sees on the real thing too;
+#   - the repository's first commit is an empty one, as on the real thing:
+#     the platform's landing opens the first pull request against an empty
+#     "Initial commit" by `orun`, and that commit is the base the first
+#     landing's push is planned against;
 #   - `link` (a `run:` hook that calls `orun cloud`) is skipped — it needs a
 #     workspace;
 #   - `{{ .inputs.* }}` render from the fixture.
 # Everything else — the rebrand, the re-tenant, the work-tree strip, the
-# deferrals and their restore, the retouch marker, the lockfile seed and
-# prune, the deployment-docs render — runs exactly as declared.
+# deferrals and their restore, the retouch marker, the lockfile check, the
+# deployment-docs render — runs exactly as declared.
 #
 # Needs: orun, node, pnpm, python3 (+PyYAML), git.
 
@@ -32,6 +36,13 @@ PY
   )
   mkdir -p "$tree"/{apps,infra,packages,tests} "$logs"
   for d in apps infra packages tests; do touch "$tree/$d/.gitkeep"; done
+  (
+    cd "$tree"
+    git init -q -b main
+    git config user.email bootstrap@example.invalid
+    git config user.name "offline bootstrap"
+    git commit -q --allow-empty -m "Initial commit"
+  ) || { echo "FAIL: the repository's first commit" >&2; return 1; }
 
   for phase in $(python3 -c "import yaml,sys;print(' '.join(p['name'] for p in yaml.safe_load(open(sys.argv[1]))['phases']))" "$root/repo-blueprint.yaml"); do
     echo "── $phase: place"

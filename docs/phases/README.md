@@ -1,7 +1,8 @@
-# The phases — one blueprint, three selections
+# The phases — one blueprint, two selections
 
-`repo-blueprint.yaml` declares three phases that take a site from **nothing**
-to **live on stage and prod, documented**. Run them one at a time with
+`repo-blueprint.yaml` declares two phases that take a site from **nothing**
+to **live on stage and prod, documented**: one landing builds the whole site,
+one records it. Run them one at a time with
 `--phase <name>`, or the whole sequence unattended with `--resume`. There is
 no umbrella workflow and no per-phase document: a phase is a selection on one
 artifact, which is what makes running one alone, months later, from a fresh
@@ -27,12 +28,15 @@ Every landing is a pull request on a branch named for its task
 intent, every component and every composition resolve — and skips the lanes,
 because the merge runs them on main a minute later, for real, and that
 convergence is what the phase watches. `checks.yml` (install, typecheck, lint,
-test, build) runs on every pull request regardless.
+test, build) skips its job on those branches for the same reason — the
+convergence builds, deploys and smoke-tests the site, and the baseline's own
+CI ran these checks over a bootstrapped tree at the tag being built — and runs
+on every other pull request.
+So each landing waits for `plan` alone, a few seconds, and merges.
 
 | phase | lands | verified by |
 |---|---|---|
-| [`01-scaffold`](01-scaffold.md) | **the GitHub repo created** and born: intent, CI, tooling, identity | repo pushed, workspace-linked, its PR's checks green |
-| [`02-site`](02-site.md) | `apps/web` + `tests/web`, deployed to stage and prod side by side | convergence green (build, deploy, smoke) + both URLs answer |
+| [`01-product`](01-product.md) | **the GitHub repo created**, then the WHOLE site in one PR: intent, CI, tooling, identity, `apps/web` + `tests/web` — one convergence deploys it to stage and prod side by side | repo workspace-linked, convergence green (build, deploy, smoke) + both URLs answer |
 | [`03-docs`](03-docs.md) | the live-deployment record; the promotion gate and dev lanes put back | committed manifest matches probed reality |
 
 There is no custom-domain phase. Attaching a domain to a Worker needs zone
@@ -42,7 +46,7 @@ domain", says how, and `SITE_URL` in `intent.yaml` makes the build use it.
 
 ## Inputs
 
-`01-scaffold` takes the site's identity once and writes it into the repo
+`01-product` takes the site's identity once and writes it into the repo
 (`.rebrand/values.json`); every later phase reads it back from the placed
 tree. But the blueprint's **required** inputs — `reponame`, `productname`,
 `productdomain`, `githuborg` — are validated before any phase runs, so they
@@ -61,7 +65,7 @@ must be supplied on every invocation, single-phase ones included. A
 
 ```bash
 orun new --blueprint repo-blueprint.yaml \
-  --out $HOME/sites/acme-notes --run-hooks --phase 02-site \
+  --out $HOME/sites/acme-notes --run-hooks --phase 01-product \
   --values ~/acme-notes.values.yaml
 ```
 
@@ -71,20 +75,20 @@ which is exactly what makes a dry instantiation of this baseline possible in
 CI with no workspace and no provider (`testing/placement.test.sh`,
 `testing/e2e.test.sh`).
 
-## What every phase does after it places
+## What 01-product does after it places
 
-Placement writes the baseline's files as they are here. Before a phase lands,
-its `post` hooks make them the site's:
+Placement writes the baseline's files as they are here. Before the phase
+lands, its `post` hooks make them the site's:
 
-1. `retouch` (deploying phases) — one `# orun: redeploy <phase> <stamp>` line
+1. `retouch` — one `# orun: redeploy <phase> <stamp>` line
    at the end of each component.yaml its task contract names, so a re-run
    after a failed convergence still has a diff to land and redeploys exactly
    those components.
 2. `rebrand` → `rebrand --verify` — the identity rename over the whole tree,
    then a sweep that fails on any of this baseline's identity left behind.
-3. `pnpm install --lockfile-only` from the baseline's complete lockfile —
-   pruned to the projects placed so far, so `--frozen-lockfile` installs
-   pass.
+3. `pnpm install --lockfile-only` over the baseline's complete lockfile —
+   the whole tree is placed, so it only confirms it and `--frozen-lockfile`
+   installs pass.
 
 ## When a phase fails
 
@@ -92,6 +96,6 @@ its `post` hooks make them the site's:
   link): nothing was merged. Fix what the message names and re-run the phase.
 - **After it lands** (the convergence went red): the files are on main.
   `orun.run/watch@v1` has already resumed the run up to three times. Re-run
-  the phase (`--phase 02-site`, `--redo 02-site` under `--resume`, or the
+  the phase (`--phase 01-product`, `--redo 01-product` under `--resume`, or the
   console's Retry): its `retouch` hook gives the landing a diff and the
   component redeploys.

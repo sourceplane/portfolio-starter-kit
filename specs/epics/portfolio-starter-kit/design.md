@@ -62,14 +62,14 @@ makes the copy somebody else's.
 
 | Cirrus | Here | Why the difference |
 |---|---|---|
-| six phases (scaffold, foundation + data plane, workers, edge + console, domain, docs) | three: `01-scaffold`, `02-site`, `03-docs` | one component deploys; no data plane, no fleet, no bindings |
+| `01-product` (the whole product in one landing), `07-domain`, `08-docs` (baseline-v22) | two: `01-product` (the whole site in one landing), `03-docs` (PK-6; three — `01-scaffold`, `02-site`, `03-docs` — before it) | one component deploys; no data plane, no fleet, no bindings, no domain phase |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_D1_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | `CLOUDFLARE_API_TOKEN` (`workers-deploy`), `CLOUDFLARE_ACCOUNT_ID` | no D1 |
 | `07-domain` (parked component) | no domain phase; `SITE_URL` per environment | `workers-deploy` has no DNS or zone scope; `dns-edit` needs zone ids a build does not have |
 | task contracts in `tasks/` | `.baseline/tasks/` | `tasks/` is this repository's own work tree (`intent.yaml` `work:`), where an unkeyed contract is an error |
 | ships its own README | ships `.baseline/product/README.md` as the site's README | this README is about the baseline; a site's owner needs the site's |
 | — | `work-tree.mjs` strips `work:` from the site's intent | a site has no `specs/` or `tasks/` |
 | stack-tectonic 0.20.0 (lane-scoped install) | 0.19.0 (the job installs in its own tree) | Next 16's Turbopack cannot build through the lane's symlinked `node_modules` (risks PK-J) |
-| one push workflow (`ci.yml`) | `checks.yml` on pull requests only | `orun.run/watch@v1` takes the newest run for a commit from any workflow (risks PK-K) |
+| one push workflow (`ci.yml`), no `checks.yml` | `checks.yml` on pull requests only, its job skipped on bootstrap branches (`orun/BASE-…`) | `orun.run/watch@v1` takes the newest run for a commit from any workflow (risks PK-K); a bootstrap landing is checked by `plan` alone, as Cirrus's is (PK-6) |
 | rebrand rules for a SaaS (console prefix, SDK class, CLI bin, API host) | rules for a site: the source link (owner + repo), the `SITE_NAME` seam, the domain, the subdomain, Worker names, secret refs, the repo slug | the identity this tree actually carries |
 
 **Identity in the app** is two literals in `apps/web/app/site.ts`: `SITE_NAME`

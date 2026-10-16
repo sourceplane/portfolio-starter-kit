@@ -1,0 +1,27 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-6
+  title: "One landing builds the site"
+spec:
+  goal: A site bootstraps in two landings instead of three — 01-product places, brands and lands the whole site and its convergence deploys it to stage and prod, 03-docs records it — and each bootstrap landing is checked by `plan` alone, cirrus-baseline baseline-v22's shape
+  affects:
+    - repo-blueprint.yaml
+    - blueprint.yaml
+    - .baseline/**
+    - .github/workflows/**
+    - docs/phases/**
+    - tooling/bootstrap/**
+    - testing/**
+    - intent.yaml
+    - README.md
+    - BOOTSTRAP.md
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - repo-blueprint.yaml declares two phases, 01-product (every module, the repo, the link, the brokered secrets, one landing, the convergence watch and the probe) and 03-docs, and the card's programme names the same two
+    - checks.yml skips its job on a bootstrap branch (orun/BASE-…), so each landing waits on plan alone
+    - Baseline CI is green — contract tests, the blueprint read by the pinned orun, the leak gate, the offline bootstrap (the repository's empty first commit, then one commit per phase) and the end-to-end tier
+    - a site bootstrapped from the tag cut after this is live on stage and prod faster than baseline-v2's 8m43s
+  gates:
+    - checks

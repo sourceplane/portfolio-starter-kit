@@ -37,3 +37,9 @@ spec:
         - "a site bootstrapped from the registered tag is live on stage and prod, its deployment record on main"
         - "what the first live bootstrap found is fixed, and the tests that missed it now reproduce it"
       tasks: [PK-5]
+    - name: "PK5 — one landing"
+      exitCriteria:
+        - "repo-blueprint.yaml builds the site in one landing (`01-product`) and records it in a second (`03-docs`); the card's programme names the same two"
+        - "a bootstrap landing is checked by `plan` alone: ci.yml skips the lanes and checks.yml its job on `orun/BASE-…` branches"
+        - "Baseline CI is green, and a site bootstrapped from the next tag is live faster than baseline-v2's measured 8m43s"
+      tasks: [PK-6]

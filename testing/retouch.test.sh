@@ -193,7 +193,7 @@ while IFS= read -r line; do
     bad "a retouch hook does not resolve: $argv"; sed 's/^/        /' "$tmp/hook.log" >&2
   fi
 done < <(grep -E '^\s*run: \[.*retouch\.mjs' "$root/repo-blueprint.yaml")
-[ "$hooks" -ge 1 ] || bad "only $hooks retouch hook(s) in repo-blueprint.yaml — 02-site lands the deployable site and needs one"
+[ "$hooks" -ge 1 ] || bad "only $hooks retouch hook(s) in repo-blueprint.yaml — 01-product lands the deployable site and needs one"
 
 [ "$fail" -eq 0 ] || exit 1
 echo "retouch.test.sh: ok"

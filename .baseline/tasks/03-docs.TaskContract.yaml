@@ -1,4 +1,4 @@
-# Task contract template for the 03-docs landing. See 01-scaffold's header.
+# Task contract template for the 03-docs landing. See 01-product's header.
 apiVersion: orun.io/v1
 kind: TaskContract
 spec:

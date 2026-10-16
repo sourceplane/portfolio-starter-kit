@@ -59,7 +59,7 @@ jobs:
   # registry, compiles every `when` and narration template, and writes
   # nothing. Then the leak gate (what a site would carry) and the placement
   # tier (the offline bootstrap: every phase placed and finished by the
-  # blueprint's own hooks, then the site's own `orun plan` for the 02-site
+  # blueprint's own hooks, then the site's own `orun plan` for the 01-product
   # merge).
   blueprint:
     runs-on: ubuntu-latest
@@ -95,11 +95,11 @@ jobs:
           git config --global user.name "baseline ci"
           bash testing/placement.test.sh
 
-  # Tier 2. THE SITE IT PRODUCES WORKS: the scaffold's landing and the
-  # finished site under the checks their pull requests wait on, the stage
-  # lane's own build, output check and dry deploy, and the built Worker served
-  # and smoke-tested with the component's own smoke command. Pinned at the
-  # site's lane version, because that is the orun the site's CI runs.
+  # Tier 2. THE SITE IT PRODUCES WORKS: the finished site under the checks
+  # every later pull request of it runs, the stage lane's own build, output
+  # check and dry deploy, and the built Worker served and smoke-tested with
+  # the component's own smoke command. Pinned at the site's lane version,
+  # because that is the orun the site's CI runs.
   site:
     runs-on: ubuntu-latest
     steps:

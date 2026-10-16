@@ -28,9 +28,10 @@ orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-notes --run-hooks --
 ```
 
 Or, once the platform's registry lists it, from the Orun console (Baselines →
-`portfolio-starter-kit` → Build). Three phases — `01-scaffold` (the repository, its CI and identity), `02-site` (the
-site deployed to stage and prod, smoke-tested), `03-docs` (the live
-deployment recorded) — each landing one pull request in the new repository.
+`portfolio-starter-kit` → Build). Two phases — `01-product` (the repository
+created, then the whole site in one pull request, deployed to stage and prod
+and smoke-tested) and `03-docs` (the live deployment recorded) — each landing
+one pull request in the new repository.
 **[BOOTSTRAP.md](BOOTSTRAP.md)** is the operator guide;
 [docs/phases/](docs/phases/README.md) has a page per phase.
 

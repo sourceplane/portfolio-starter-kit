@@ -1,0 +1,24 @@
+# Task contract template for the 01-product landing.
+# Unbound to a key on purpose: `orun.task/ensure@v1` seals and attaches it to
+# the key the allocator issues. It lives under `.baseline/`, not `tasks/`,
+# because `tasks/` is this repository's own work tree (`intent.yaml` `work:`),
+# where an unkeyed contract is an error. gates: [] is a DECLARATION — merge
+# alone finishes this task; the main convergence is the gate the bootstrap
+# watches, not one the plane observes as a PR check.
+#
+# The whole site in one landing. `affects` names COMPONENTS, by
+# metadata.name: the phase's retouch hook reads this list to decide which
+# component.yaml files get the redeploy marker, so the deploy set and the task
+# plane's statement of the work are one list.
+apiVersion: orun.io/v1
+kind: TaskContract
+spec:
+  goal: The site's repository is born and linked, the whole site lands in one pull request, and one convergence builds it with OpenNext and deploys it to stage and prod
+  affects:
+    - web
+    - web-tests
+  doneWhen:
+    - repo pushed, main pinned as default, workspace linked (orun cloud link)
+    - main convergence green (build, deploy and smoke on stage and prod)
+    - the home page answers on both workers.dev URLs
+  gates: []

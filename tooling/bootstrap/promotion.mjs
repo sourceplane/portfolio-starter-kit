@@ -10,9 +10,9 @@
 // is watched to green before the next one starts) and it doubles the length
 // of every convergence: each worker's prod deploy waits out its stage deploy.
 //
-// So 01-scaffold defers the gate and 03-docs, the last landing, puts it back:
+// So 01-product defers the gate and 03-docs, the last landing, puts it back:
 //
-//   node tooling/bootstrap/promotion.mjs --defer     # 01-scaffold, before the first landing
+//   node tooling/bootstrap/promotion.mjs --defer     # 01-product, before its landing
 //   node tooling/bootstrap/promotion.mjs --restore   # 03-docs, the last landing
 //   node tooling/bootstrap/promotion.mjs --check     # prints deferred | enforced
 //

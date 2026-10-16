@@ -8,8 +8,8 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 
 | Field | Value |
 |-------|-------|
-| Status | 🟡 PK0–PK3 shipped (#1–#4); PK4 — proven live — in progress (PK-5) |
-| Cluster | **PK** (PK0–PK4) |
+| Status | 🟡 PK0–PK4 shipped (#1–#5); PK5 — one landing — in progress (PK-6) |
+| Cluster | **PK** (PK0–PK5) |
 | Owner(s) | `apps/web` (the site) · `tests/web` (loader, date and sitemap tests) |
 | Builds on | `cirrus-baseline` conventions; the `blog-starter` port's build shape (static-assets incremental cache + `populateCache`) |
 | Upstream | [vercel/examples `solutions/blog`](https://github.com/vercel/examples/tree/main/solutions/blog) (the "Portfolio Starter Kit" template) |
@@ -34,3 +34,4 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 | PK2 — ready to instantiate | README, as-built status | a reader can run, test, preview and deploy it |
 | PK3 — a baseline | card, build document, rename, bootstrap tooling, tests | a new site goes from nothing to live in three phases; Baseline CI green |
 | PK4 — proven live | what the first live bootstrap found, fixed, and the tests that missed it | a site bootstrapped from the registered tag is live on stage and prod |
+| PK5 — one landing | the site in one landing, each bootstrap landing checked by `plan` alone (cirrus-baseline baseline-v22's shape) | a site bootstrapped from the next tag is live faster than baseline-v2's 8m43s |

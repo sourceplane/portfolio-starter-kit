@@ -29,8 +29,8 @@
 // phase state is DERIVED from the tree, never stored in it — holds. Delete the
 // line and nothing is lost but the next redeploy's reason to happen.
 //
-//   node retouch.mjs --phase 02-site --affects .baseline/tasks/02-site.TaskContract.yaml
-//   node retouch.mjs --phase 02-site --components web,web-tests
+//   node retouch.mjs --phase 01-product --affects .baseline/tasks/01-product.TaskContract.yaml
+//   node retouch.mjs --phase 01-product --components web,web-tests
 //
 // Options:
 //   --phase <name>          the phase the marker names (required)
