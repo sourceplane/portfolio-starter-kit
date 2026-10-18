@@ -47,11 +47,76 @@ contracts, the site's README), `tooling/rebrand`, `tooling/bootstrap`,
 
 ## After PK3 (outside this repository)
 
-1. Cut `baseline-v1` with `tag.yml` from the merged `main`.
+1. Cut `baseline-v1` with `tag.yml` from the merged `main` — done:
+   `baseline-v1` is [#4](https://github.com/sourceplane/portfolio-starter-kit/pull/4)'s merge.
 2. Register the row in orun-cloud's `infra/baselines-registry/baselines.yaml`
-   (unlisted) with the card vendored at the tag.
+   (unlisted) with the card vendored at the tag — done (IMPLEMENTATION-STATUS,
+   PK4).
 3. Bootstrap one site from the tag against a workspace; record its timings;
-   then flip the row to public with a page on orunbase.com.
+   then flip the row to public with a page on orunbase.com. The bootstrap
+   from `baseline-v1` failed and became PK4; `baseline-v2`'s came up on
+   2026-10-15 in 8m43s. The row's listing is the registry's record, not this
+   repository's.
+
+## PK4 — proven live ✅
+
+What the first live bootstrap (from `baseline-v1`, workspace
+`test-portfolio-starter-kit`) found, fixed, and the tests that missed it:
+
+- stack-tectonic pinned to 0.19.0: 0.20.0's lane-shared install links each
+  job's `node_modules` out of its tree, and Turbopack refuses it (risk PK-J);
+- `checks.yml` on pull requests only, so the convergence watch reads
+  `ci.yml`'s run on a push to main (risk PK-K);
+- `testing/e2e.test.sh` stages the job as orun does
+  (`testing/lib/stage-job.py`), red on the old pin, green on the new.
+
+**Done when**
+- a site bootstrapped from the registered tag is live on stage and prod, its
+  deployment record on main — `baseline-v2`, 2026-10-15 (8m43s)
+- what the first live bootstrap found is fixed, and the tests that missed it
+  now reproduce it
+
+## PK5 — one landing ✅
+
+cirrus-baseline baseline-v22's shape: two phases instead of three —
+`01-product` places, brands and lands the whole site, and its convergence
+deploys it to stage and prod; `03-docs` records it — the brokered secrets
+minted in `01-product`'s `post`, and each bootstrap landing checked by
+`plan` alone (`ci.yml` skips the lanes and `checks.yml` its job on
+`orun/BASE-…` branches).
+
+**Done when**
+- `repo-blueprint.yaml` builds the site in one landing and records it in a
+  second; the card's programme names the same two
+- Baseline CI is green, and a site bootstrapped from the next tag is live
+  faster than `baseline-v2`'s 8m43s — the live half waits for that tag
+  (risk PK-G)
+
+## PK6 — the cirrus standard ✅
+
+Bring the baseline to cirrus-baseline's standard, with nothing about the
+site itself changing.
+
+- **No kiox.** `kiox.yaml`/`kiox.lock` pinned an orun (v2.15.0) that nothing
+  ran: every workflow installs orun itself through `orun-action` with its own
+  `version:`. The files, their two modules and the rebrand's skip entry go.
+- **Component docs.** `tooling/catalog/gen-component-docs.py` writes each
+  component's `docs/overview.md`, `docs/architecture.md` and `docs/runbook.md`
+  from what the component declares, as cirrus-baseline's do; the pages ship
+  with the component. Baseline CI runs it with `--check`.
+- **The context pack.** `ai/context/current.md`, `decisions.md` and
+  `open-risks.md` beside the two pages a site ships with — this
+  repository's own, so no module places them.
+- **Status that agrees with the tags.** PK5 is shipped, on `main` and not
+  yet tagged; risk PK-G says what `baseline-v2` proved live and what the
+  one-landing shape has not.
+
+**Done when**
+- nothing outside this milestone's own record names kiox (`git grep -i
+  kiox`), and the leak gate and the offline bootstrap pass without the two
+  modules
+- the docs check is green in Baseline CI
+- this file, the status file and `epic.yaml` agree
 
 ## Sequencing note
 

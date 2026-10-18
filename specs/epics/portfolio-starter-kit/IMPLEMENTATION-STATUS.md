@@ -10,7 +10,8 @@ the code departed from `design.md` or from the upstream template.
 | PK2 — ready to instantiate | ✅ Shipped | [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3) |
 | PK3 — a baseline | ✅ Shipped | [#4](https://github.com/sourceplane/portfolio-starter-kit/pull/4) (PK-4), tagged `baseline-v1` |
 | PK4 — proven live | ✅ Shipped | [#5](https://github.com/sourceplane/portfolio-starter-kit/pull/5) (PK-5), tagged `baseline-v2`; proven by a console bootstrap on 2026-10-15 (below) |
-| PK5 — one landing | 🟡 In progress | this PR (PK-6), to be tagged `baseline-v3` |
+| PK5 — one landing | ✅ Shipped | [#6](https://github.com/sourceplane/portfolio-starter-kit/pull/6) (PK-6) — on `main`, not yet tagged; not yet proven by a live bootstrap (risk PK-G) |
+| PK6 — the cirrus standard | ✅ Shipped | PK-7 — on `main` after `baseline-v2`, not yet tagged |
 
 ## Departures from the upstream template
 
@@ -77,6 +78,39 @@ ships into every site. It now describes the app and credits the template (MIT).
 | orun lane pin | v2.78.0 | v2.78.4 | cirrus-baseline's pin |
 | `intent.yaml` | terraform `parameterDefaults`; docs pages under `specs/` | neither; docs pages `ai/context/*` | no terraform component; the pages must exist in a site |
 | `tasks/PK-1..3` | no `metadata` | `metadata.name` and `title` | `orun work check` (≥ v2.79) refused them |
+
+## The cirrus standard (PK6)
+
+Nothing about the site changed. What changed is the baseline around it:
+
+| What | Before | After | Why |
+|---|---|---|---|
+| orun pin | `kiox.yaml` (v2.15.0) + `kiox.lock`, shipped to every site | gone; orun is pinned where it runs, the `orun-action` `version:` in each workflow | nothing ran the kiox pin, and it disagreed with the lanes (v2.78.4) |
+| `root-kiox`, `root-kiox-lock` modules | in `01-product` | removed (`testing/phases.test.sh`, the rebrand's skip list and `docs/phases/01-product.md` follow) | a site is placed with 65 − 2 + 6 = 69 files: no kiox, plus the docs below |
+| component docs | none | `apps/web/docs/` and `tests/web/docs/` — `overview.md`, `architecture.md`, `runbook.md` | cirrus-baseline documents every component; the workspace Docs library renders `docs/` beside each `component.yaml` |
+| how the docs stay true | — | `tooling/catalog/gen-component-docs.py` derives them from the manifest, the Worker config, Terraform, migrations and package scripts; Baseline CI runs it with `--check` | a hand-written copy of a manifest drifts silently |
+| context pack | `operations.md`, `deployment.md` | plus `current.md`, `decisions.md`, `open-risks.md` | cirrus-baseline's shape; the three new pages are this repository's own and no module places them (the leak gate still allows exactly two) |
+| status | PK5 "in progress, this PR, to be tagged `baseline-v3`"; risk PK-G "no live bootstrap yet", planning the `02-site` merge; no PK4 or PK5 in the plan | PK5 shipped, on `main`, untagged; PK-G says `baseline-v2` went live and the one-landing shape has not; the plan has PK4–PK6 | the documents had not caught up with the tags and the live run |
+
+## Verified (PK6)
+
+- `testing/{manifest,phases,coverage,rebrand,retouch,bootstrap-defer}.test.sh`
+  green; `gen-component-docs.py --check` green (2 components, 6 pages).
+- `testing/leak.test.sh` (v2.58.11): 69 files derived (65 − 2 kiox + 6 docs
+  pages); ai/context still exactly the two declared pages; nothing of the
+  factory, nothing local or built, no provenance prose.
+- `testing/placement.test.sh` (v2.58.11, as `baseline.yml` runs it): 69
+  files placed, both landings, branded, re-tenanted; the site's own `orun
+  plan` for the 01-product merge deploys `web` to stage and prod side by
+  side; `--resume` changes nothing.
+- `pnpm install --frozen-lockfile`, `wire:fixture`, `typecheck`, `lint`,
+  `test` (5 tests, 2 files), `build` green.
+- `testing/e2e.test.sh` (v2.78.4) green: the finished site under the Checks
+  sequence, the stage lane's planned steps in a staged job tree, `wrangler
+  dev` over the built Worker, the component's own smoke, and `/`, `/blog`, a
+  post, a 404, `/rss`, `/sitemap.xml`, `/robots.txt` and `/og` on the stage
+  origin.
+- `orun task check PK-7` complete.
 
 ## One landing (PK5)
 

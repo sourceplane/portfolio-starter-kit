@@ -175,7 +175,6 @@ const EXCLUDE_RE = new RegExp(
     // product claim to be a baseline called by the product's own name.
     "^\\.baseline/",
     "^pnpm-lock\\.yaml$",
-    "^kiox\\.lock$",
     "\\.(png|jpg|jpeg|ico|gif|webp|woff2?|ttf|eot)$",
   ].join("|"),
 );

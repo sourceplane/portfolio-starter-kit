@@ -49,6 +49,12 @@ jobs:
             echo "── $t"
             bash "testing/$t.test.sh"
           done
+      # Every component's docs/{overview,architecture,runbook}.md is generated
+      # from what the component declares (its manifest, Worker config,
+      # Terraform, migrations, package scripts). A pull request that changes
+      # one of those facts without regenerating the pages fails here.
+      - name: Component docs match their manifests
+        run: python3 tooling/catalog/gen-component-docs.py --check
 
   # Tier 1. THE BLUEPRINT, READ AND PLACED BY THE BINARY A BOOTSTRAP RUNS.
   #

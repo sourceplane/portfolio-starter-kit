@@ -38,17 +38,24 @@ ran at request time and failed on the Worker (`readdir` of the posts
 directory). `export const dynamic = 'force-static'` pre-renders it at build,
 which is what the template did on Next 14.
 
-## PK-G — No live bootstrap yet (OPEN — the first one found PK-J and PK-K)
+## PK-G — The one-landing shape is not yet proven live (OPEN; `baseline-v2` was)
 
 Everything short of the platform is proven on every pull request: the card
 against the build, the blueprint read by the pinned orun, the leak gate, the
 offline bootstrap with the blueprint's own hooks, the site's own plan for the
-02-site merge, and the produced site built, dry-deployed, served and
-smoke-tested. What is NOT proven is the platform's half — the repository
-created and linked, the Cloudflare token minted by `integrations/reconcile`,
-a real `wrangler deploy`, the probes against workers.dev. Hence the registry
-row is `unlisted` until one bootstrap from the tag has come up, as virga's
-and cirrus-baseline's first tags were.
+01-product merge, and the produced site built, dry-deployed, served and
+smoke-tested. The platform's half — the repository created and linked, the
+Cloudflare token minted by `integrations/reconcile`, a real `wrangler
+deploy`, the probes against workers.dev — only a live bootstrap proves.
+
+*2026-10-15:* the first live bootstrap, from `baseline-v1` (workspace
+`test-portfolio-starter-kit`), stopped at `02-site`'s final probe and found
+PK-J and PK-K. `baseline-v2`, with both fixed, then went live from the
+console's Build (`portfolio-live`, `bst_R3SZP8S4`): 8m43s end to end, over
+its three landings (IMPLEMENTATION-STATUS, PK5). What `main` builds since
+PK5 — one landing, `01-product`, then `03-docs` — has not been bootstrapped
+live. The first bootstrap from the next tag closes this, and replaces PK5's
+6-minute estimate with a measurement.
 
 ## PK-H — A custom domain is the owner's step (ACCEPTED)
 

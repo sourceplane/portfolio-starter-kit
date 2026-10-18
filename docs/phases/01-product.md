@@ -1,7 +1,7 @@
 # 01-product — the site, built in one landing
 
 **Places** the whole tree: the root manifests (`intent.yaml`, `package.json`,
-the pnpm workspace and lockfile, `turbo.json`, the kiox pin),
+the pnpm workspace and lockfile, `turbo.json`),
 `.github/workflows` (`ci.yml` and `checks.yml` — the baseline's own
 `baseline.yml` and `tag.yml` are ignored), the shared TypeScript/ESLint
 config and the wrangler renderer, the site's README and its two context
