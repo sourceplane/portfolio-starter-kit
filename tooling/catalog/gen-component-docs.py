@@ -119,7 +119,13 @@ def read_component(file: pathlib.Path) -> dict:
     params = spec.get("parameters") or {}
     deps = [d.get("component") for d in (spec.get("dependsOn") or []) if isinstance(d, dict)]
     envs = []
+    # Secrets may be declared for the whole component or per environment
+    # (`subscribe.environments[].secretEnv`); a page lists both.
+    req_env = set((spec.get("secretEnv") or {}).keys())
+    opt_env = set((spec.get("optionalSecretEnv") or {}).keys())
     for e in ((spec.get("subscribe") or {}).get("environments") or []):
+        req_env |= set((e.get("secretEnv") or {}).keys())
+        opt_env |= set((e.get("optionalSecretEnv") or {}).keys())
         rules = [(r.get("profile"), ((r.get("when") or {}).get("triggerRef")))
                  for r in (e.get("profileRules") or [])]
         envs.append({"name": e.get("name"), "profile": e.get("profile"), "rules": rules})
@@ -130,7 +136,8 @@ def read_component(file: pathlib.Path) -> dict:
         "description": (meta.get("description") or "").strip(),
         "type": spec.get("type"),
         "deps": [d for d in deps if d],
-        "secret_env": sorted((spec.get("secretEnv") or {}).keys()),
+        "secret_env": sorted(req_env),
+        "optional_env": sorted(opt_env - req_env),
         "envs": envs,
         "params": params,
         "migrations_path": spec.get("path") if spec.get("type") == "db-migrate" else None,
@@ -278,6 +285,14 @@ def subject_of(c: dict, by_name: dict) -> str | None:
     return None
 
 
+def names_list(c: dict, keep) -> list[str]:
+    """Secret names a lane resolves, required first; an optional one (from
+    `optionalSecretEnv`) is resolved when it exists and skipped when not."""
+    req = [f"- `{k}`" for k in c["secret_env"] if keep(k)]
+    opt = [f"- `{k}` (optional)" for k in c["optional_env"] if keep(k)]
+    return req + opt
+
+
 def bullet_list(names: list[str], by_name: dict) -> list[str]:
     if not names:
         return ["- (none)"]
@@ -337,9 +352,8 @@ def architecture(c: dict, by_name: dict) -> str:
                       *md_table(["Secret", "Terraform output"], [[f"`{k}`", f"`{v}`"] for k, v in pub]), ""]
         elif f["outputs"]:
             lines += ["## Outputs", "", *[f"- `{o}`" for o in f["outputs"]], ""]
-        if c["secret_env"]:
-            lines += ["## Resolved at run time (names only)", "",
-                      *[f"- `{k}`" for k in c["secret_env"]], ""]
+        if c["secret_env"] or c["optional_env"]:
+            lines += ["## Resolved at run time (names only)", "", *names_list(c, lambda k: True), ""]
         return "\n".join(lines)
 
     if t == "db-migrate":
@@ -349,9 +363,8 @@ def architecture(c: dict, by_name: dict) -> str:
                   "is never edited: a change is a new, later migration.", ""]
         if migs:
             lines += ["## Migrations", "", *[f"- `{m}`" for m in migs], ""]
-        if c["secret_env"]:
-            lines += ["## Resolved at run time (names only)", "",
-                      *[f"- `{k}`" for k in c["secret_env"]], ""]
+        if c["secret_env"] or c["optional_env"]:
+            lines += ["## Resolved at run time (names only)", "", *names_list(c, lambda k: True), ""]
         return "\n".join(lines)
 
     pkg = package_of(c)
@@ -385,14 +398,14 @@ def architecture(c: dict, by_name: dict) -> str:
                 lines += ["## Variables", "", ", ".join(f"`{v}`" for v in var_names)
                           + (f" — overridden per environment ({', '.join(f'`{e}`' for e in env_names)})."
                              if env_names else "."), ""]
-        wiring = [k for k in c["secret_env"] if k.startswith("WIRING_")]
-        others = [k for k in c["secret_env"] if not k.startswith("WIRING_")]
+        wiring = names_list(c, lambda k: k.startswith("WIRING_"))
+        others = names_list(c, lambda k: not k.startswith("WIRING_"))
         if wiring:
             lines += ["## Wiring", "",
                       "Resolved at deploy time from secrets the infrastructure lanes publish (names only):",
-                      "", *[f"- `{k}`" for k in wiring], ""]
+                      "", *wiring, ""]
         if others:
-            lines += ["## Secrets resolved by the lane (names only)", "", *[f"- `{k}`" for k in others], ""]
+            lines += ["## Secrets resolved by the lane (names only)", "", *others, ""]
         return "\n".join(lines)
 
     # turbo-package
@@ -460,7 +473,7 @@ def runbook(c: dict, by_name: dict) -> str:
                   "  not applied for this environment; that lane runs first in a convergence.", ""]
     elif t.startswith("cloudflare-"):
         _, cfg = worker_config(c)
-        takes_wiring = any(k.startswith("WIRING_") for k in c["secret_env"]) or \
+        takes_wiring = any(k.startswith("WIRING_") for k in c["secret_env"] + c["optional_env"]) or \
             bool(cfg and WIRING.search(json.dumps(cfg)))
         if takes_wiring:
             lines += ["- **A `WIRING_*` secret is missing at deploy**: an infrastructure lane upstream",
