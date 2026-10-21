@@ -1,0 +1,28 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-7
+  title: "The cirrus standard"
+spec:
+  goal: The baseline meets cirrus-baseline's standard — no kiox pin (orun is pinned where CI runs it), every component documented by generated overview/architecture/runbook pages that CI keeps in step with the manifests, the agent context pack, and status documents that agree with the tags
+  affects:
+    - kiox.yaml
+    - kiox.lock
+    - repo-blueprint.yaml
+    - testing/phases.test.sh
+    - tooling/rebrand/**
+    - tooling/catalog/**
+    - .github/workflows/baseline.yml
+    - apps/web/docs/**
+    - tests/web/docs/**
+    - ai/context/**
+    - docs/phases/**
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - nothing outside this milestone's own record names kiox, and the leak gate and the offline bootstrap place a site without it
+    - every component has docs/overview.md, docs/architecture.md and docs/runbook.md, and `python3 tooling/catalog/gen-component-docs.py --check` is green in Baseline CI
+    - ai/context carries current.md, decisions.md and open-risks.md for this repository (none of them ships)
+    - every milestone's status row agrees with the tags
+  gates:
+    - checks

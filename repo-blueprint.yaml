@@ -175,16 +175,6 @@ modules:
     source: baseline
     from: turbo.json
     to: turbo.json
-  - name: root-kiox
-    mode: copy
-    source: baseline
-    from: kiox.yaml
-    to: kiox.yaml
-  - name: root-kiox-lock
-    mode: copy
-    source: baseline
-    from: kiox.lock
-    to: kiox.lock
   - name: root-gitignore
     mode: copy
     source: baseline
@@ -388,7 +378,7 @@ phases:
       await:  "The site is building and deploying on both environments. The Next.js build is the long pole; nothing is stuck."
       done:   "{{ .inputs.reponame }} is live on stage and prod — {{ .meta.files }} files on main, branded as {{ .inputs.productname }}. That took {{ .meta.elapsed }}."
       failed: "The site did not come up. The failing lane above names the step — the build, the deploy or the smoke — and a provider error is in its log."
-    modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-gitignore, root-intent, root-kiox, root-kiox-lock, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode, web, web-tests]
+    modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-gitignore, root-intent, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode, web, web-tests]
     # THE PLATFORM MUST BE ABLE TO SEE THE REPOSITORY BEFORE IT EXISTS. Every
     # phase lands a pull request that files under its task, and the platform
     # learns of a PR only through the GitHub App installation on the account

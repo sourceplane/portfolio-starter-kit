@@ -8,15 +8,15 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 
 | Field | Value |
 |-------|-------|
-| Status | 🟡 PK0–PK4 shipped (#1–#5); PK5 — one landing — in progress (PK-6) |
-| Cluster | **PK** (PK0–PK5) |
+| Status | ✅ PK0–PK5 shipped (#1–#6): PK3 tagged `baseline-v1`, PK4 tagged `baseline-v2` and proven live by a console bootstrap (2026-10-15, 8m43s); PK5 (one landing, PK-6) and PK6 (the cirrus standard, PK-7) on `main`, not yet tagged — the one-landing shape not yet proven live (risk PK-G) |
+| Cluster | **PK** (PK0–PK6) |
 | Owner(s) | `apps/web` (the site) · `tests/web` (loader, date and sitemap tests) |
 | Builds on | `cirrus-baseline` conventions; the `blog-starter` port's build shape (static-assets incremental cache + `populateCache`) |
 | Upstream | [vercel/examples `solutions/blog`](https://github.com/vercel/examples/tree/main/solutions/blog) (the "Portfolio Starter Kit" template) |
 | Changes | Adds the Workers build, the monorepo wrapper, tests and the deploy contract; swaps two Vercel scripts for one Cloudflare beacon; makes the origin an env var |
 | Decisions locked | (1) OpenNext on Workers + Static Assets. (2) Posts pre-rendered, `dynamicParams = false`. (3) `baseUrl` = `NEXT_PUBLIC_SITE_URL`, set by the Orun build to the environment's Worker URL. (4) Tailwind 4 stable instead of the alpha the template pinned. |
 | Gate | PK1 is the first user-visible rung. |
-| Shipped as | `main` after [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3); verified locally under `wrangler dev`, deploy gated until a workspace is linked |
+| Shipped as | `baseline-v1` ([#4](https://github.com/sourceplane/portfolio-starter-kit/pull/4)); `baseline-v2` ([#5](https://github.com/sourceplane/portfolio-starter-kit/pull/5)), live from the console on 2026-10-15; then PK5 ([#6](https://github.com/sourceplane/portfolio-starter-kit/pull/6)) and PK6 on `main`, proven offline (Baseline CI) |
 
 ## Read order
 
@@ -35,3 +35,4 @@ The upstream code stays the code: the MDX components, the posts loader, the feed
 | PK3 — a baseline | card, build document, rename, bootstrap tooling, tests | a new site goes from nothing to live in three phases; Baseline CI green |
 | PK4 — proven live | what the first live bootstrap found, fixed, and the tests that missed it | a site bootstrapped from the registered tag is live on stage and prod |
 | PK5 — one landing | the site in one landing, each bootstrap landing checked by `plan` alone (cirrus-baseline baseline-v22's shape) | a site bootstrapped from the next tag is live faster than baseline-v2's 8m43s |
+| PK6 — the cirrus standard | no kiox, generated component docs, the context pack, status that agrees with the tags | Baseline CI green with the docs check |
