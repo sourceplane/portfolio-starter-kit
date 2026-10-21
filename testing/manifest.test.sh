@@ -217,9 +217,20 @@ for path in manifests:
         # field for it (saas-bootstrap-console BC-K5). Two ways to get it
         # wrong, and the platform refuses both — check them here too, so the
         # mistake is caught in this repo rather than at a live bootstrap.
+        #
+        # A `connection.<provider>.<fact>` source is read from the connection
+        # the build is bound to, so the provider must be one the manifest
+        # requires — the platform's parser refuses it otherwise.
+        sources_known = ("repo.name", "repo.owner", "repo.fullName",
+                         "connection.cloudflare.workersSubdomain")
         src = field.get("from")
-        if src is not None and src not in ("repo.name", "repo.owner", "repo.fullName"):
-            B(f"inputs[{key}].from is {src!r} — must be repo.name, repo.owner or repo.fullName")
+        if src is not None and src not in sources_known:
+            B(f"inputs[{key}].from is {src!r} — must be one of {', '.join(sources_known)}")
+        if isinstance(src, str) and src.startswith("connection."):
+            provider = src.split(".")[1]
+            if provider not in ((spec.get("requires") or {}).get("integrations") or []):
+                B(f"inputs[{key}].from is {src!r} but spec.requires.integrations "
+                  f"does not list {provider} — there is no connection to read it from")
 
     # ── secrets: BOTH or NEITHER, checked both ways ───────────────────────
     declared = {s.get("key"): (s.get("provider"), s.get("template")) for s in (spec.get("secrets") or [])}

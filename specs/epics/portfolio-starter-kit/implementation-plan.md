@@ -89,8 +89,8 @@ minted in `01-product`'s `post`, and each bootstrap landing checked by
 - `repo-blueprint.yaml` builds the site in one landing and records it in a
   second; the card's programme names the same two
 - Baseline CI is green, and a site bootstrapped from the next tag is live
-  faster than `baseline-v2`'s 8m43s — the live half waits for that tag
-  (risk PK-G)
+  faster than `baseline-v2`'s 8m43s — the live half waits for a bootstrap
+  from `baseline-v3`, the first tag that carries PK5 (risk PK-G)
 
 ## PK6 — the cirrus standard ✅
 
@@ -107,9 +107,15 @@ site itself changing.
 - **The context pack.** `ai/context/current.md`, `decisions.md` and
   `open-risks.md` beside the two pages a site ships with — this
   repository's own, so no module places them.
-- **Status that agrees with the tags.** PK5 is shipped, on `main` and not
-  yet tagged; risk PK-G says what `baseline-v2` proved live and what the
+- **Status that agrees with the tags.** PK5 is shipped (untagged until
+  `baseline-v3`); risk PK-G says what `baseline-v2` proved live and what the
   one-landing shape has not.
+- **The subdomain from the Cloudflare connection (PK-8).** The card's
+  `subdomain` input declares `from: connection.cloudflare.workersSubdomain`,
+  as cirrus-baseline's does since baseline-v23: the bootstrap door fills it
+  from the connection the build is bound to, so the console asks for nothing
+  a typo could get wrong. `testing/manifest.test.sh` takes cirrus-baseline's
+  rule, which requires the provider in `spec.requires.integrations`.
 
 **Done when**
 - nothing outside this milestone's own record names kiox (`git grep -i
