@@ -10,8 +10,8 @@ the code departed from `design.md` or from the upstream template.
 | PK2 — ready to instantiate | ✅ Shipped | [#3](https://github.com/sourceplane/portfolio-starter-kit/pull/3) |
 | PK3 — a baseline | ✅ Shipped | [#4](https://github.com/sourceplane/portfolio-starter-kit/pull/4) (PK-4), tagged `baseline-v1` |
 | PK4 — proven live | ✅ Shipped | [#5](https://github.com/sourceplane/portfolio-starter-kit/pull/5) (PK-5), tagged `baseline-v2`; proven by a console bootstrap on 2026-10-15 (below) |
-| PK5 — one landing | ✅ Shipped | [#6](https://github.com/sourceplane/portfolio-starter-kit/pull/6) (PK-6) — on `main`, not yet tagged; not yet proven by a live bootstrap (risk PK-G) |
-| PK6 — the cirrus standard | ✅ Shipped | PK-7 — on `main` after `baseline-v2`, not yet tagged |
+| PK5 — one landing | ✅ Shipped | [#6](https://github.com/sourceplane/portfolio-starter-kit/pull/6) (PK-6), tagged `baseline-v3` — the first tag of the one-landing shape; not yet proven by a live bootstrap (risk PK-G) |
+| PK6 — the cirrus standard | ✅ Shipped | [#7](https://github.com/sourceplane/portfolio-starter-kit/pull/7) (PK-7), [#8](https://github.com/sourceplane/portfolio-starter-kit/pull/8) (PK-8), tagged `baseline-v3` |
 
 ## Departures from the upstream template
 
@@ -91,6 +91,49 @@ Nothing about the site changed. What changed is the baseline around it:
 | how the docs stay true | — | `tooling/catalog/gen-component-docs.py` derives them from the manifest, the Worker config, Terraform, migrations and package scripts; Baseline CI runs it with `--check` | a hand-written copy of a manifest drifts silently |
 | context pack | `operations.md`, `deployment.md` | plus `current.md`, `decisions.md`, `open-risks.md` | cirrus-baseline's shape; the three new pages are this repository's own and no module places them (the leak gate still allows exactly two) |
 | status | PK5 "in progress, this PR, to be tagged `baseline-v3`"; risk PK-G "no live bootstrap yet", planning the `02-site` merge; no PK4 or PK5 in the plan | PK5 shipped, on `main`, untagged; PK-G says `baseline-v2` went live and the one-landing shape has not; the plan has PK4–PK6 | the documents had not caught up with the tags and the live run |
+
+### The subdomain from the Cloudflare connection (PK-8)
+
+The card's `subdomain` input was typed by hand, though it belongs to the
+Cloudflare account the same way its id does and has exactly one right
+answer; a wrong value surfaced only after deploy, in the origin the site is
+built with (its sitemap, feed and Open Graph links) and `01-product`'s
+probes. It now declares `from: connection.cloudflare.workersSubdomain`, as
+cirrus-baseline's card does since baseline-v23: the Cloudflare integration
+reads the subdomain at connect and on its hourly health check, the bootstrap
+door fills the input from the connection the build is bound to (the one
+`CLOUDFLARE_ACCOUNT_ID` and the deploy token come from), the console renders
+no field for it, and an account with no workers.dev subdomain is refused at
+the door. Nothing a site runs changes.
+
+- `blueprint.yaml`: the `from:` source and the reason, at the input; key,
+  label, pattern, help and example unchanged.
+- `testing/manifest.test.sh`: cirrus-baseline's rule, byte for byte — the
+  source is accepted, and a `connection.<provider>.…` source whose provider
+  `spec.requires.integrations` does not list fails (the card lists
+  `cloudflare`).
+- `repo-blueprint.yaml`, `BOOTSTRAP.md`, `docs/phases/README.md`: a console or
+  `--from bst_…` build reads it from the connection; only a hand-run build
+  passes `--set subdomain`. The default is unchanged.
+
+`baseline-v3` carries this, PK6 and PK5: it is the first tag of the
+one-landing shape, so the first bootstrap from it is also the one that
+closes PK-G.
+
+Verified:
+
+- `testing/{manifest,phases,coverage,rebrand,retouch,bootstrap-defer}.test.sh`
+  green; `gen-component-docs.py --check` green (2 components).
+- Mutation: `cloudflare` removed from `spec.requires.integrations` →
+  `manifest.test.sh` fails with exactly one finding, `inputs[subdomain].from
+  is 'connection.cloudflare.workersSubdomain' but spec.requires.integrations
+  does not list cloudflare`; restored, green.
+- `orun new --status` (v2.58.11): `01-product` pending (69 files), `03-docs`
+  hook-only. `testing/leak.test.sh` (v2.58.11): 69 files derived; ai/context
+  still exactly the two declared pages.
+- `testing/placement.test.sh` (v2.58.11, as `baseline.yml` runs it): 69
+  files placed, both landings, `--resume` changes nothing.
+- `orun task check PK-8` complete.
 
 ## Verified (PK6)
 

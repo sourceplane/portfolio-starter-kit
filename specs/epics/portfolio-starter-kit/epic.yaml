@@ -49,4 +49,5 @@ spec:
         - "every component carries generated docs/{overview,architecture,runbook}.md, and Baseline CI fails a pull request whose manifests and pages disagree"
         - "ai/context carries this repository's current.md, decisions.md and open-risks.md, and none of them ships to a site"
         - "every milestone's status row agrees with the tags"
-      tasks: [PK-7]
+        - "the console card reads subdomain from the Cloudflare connection (from: connection.cloudflare.workersSubdomain), as cirrus-baseline since baseline-v23"
+      tasks: [PK-7, PK-8]

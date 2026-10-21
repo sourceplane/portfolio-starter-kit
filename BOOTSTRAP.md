@@ -57,6 +57,12 @@ orun new --blueprint repo-blueprint.yaml \
   --set subdomain=<workers-dev-subdomain>
 ```
 
+`subdomain` is the workers.dev subdomain of the Cloudflare account you deploy
+into (Workers & Pages → your subdomain). A build started from the console, or
+with `orun baseline new --from bst_…`, never asks for it: the platform reads
+it from the workspace's Cloudflare connection, the same one the deploy token
+is minted from. Only a hand-run build like this one passes it.
+
 **`--run-hooks` is the difference between placing files and bootstrapping a
 site.** Without it `orun new` writes the tree and stops: no repository, no
 landing, no convergence watch, no probe. That is deliberate — it is what

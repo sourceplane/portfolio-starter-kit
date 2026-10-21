@@ -88,6 +88,19 @@ spec:
       pattern: "^[a-z0-9][a-z0-9-]{0,62}$"
       help: The workers.dev subdomain of the Cloudflare account the site deploys into.
       example: acme
+      # READ FROM THE CLOUDFLARE CONNECTION, not asked. The subdomain belongs
+      # to the account the same way its id does, and there is exactly one
+      # right answer — a typed one could only be wrong, and wrong showed up
+      # after deploy, in the origin the site is built with (its sitemap, feed
+      # and Open Graph links), 01-product's probes and the verify URL below.
+      # The integration reads it from Cloudflare at connect and on its hourly
+      # health check; the bootstrap door fills this input from the connection
+      # the build is BOUND to, the same one CLOUDFLARE_ACCOUNT_ID and the
+      # deploy token mint from, so all three name one account. The console
+      # renders no field for it, and an account with no workers.dev subdomain
+      # refuses the build at the door, naming the fix, before anything is
+      # created.
+      from: connection.cloudflare.workersSubdomain
 
   # ── PREVIEW ONLY. repo-blueprint.yaml's `orun.integrations/reconcile@v1`
   # hooks mint these, brokered, during 01-product. ──────────────────────────

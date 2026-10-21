@@ -18,3 +18,4 @@ reads in order.
 | 10 | `ci.yml` plans nothing while `intent.yaml` names `ws_CHANGE_ME` (replaced the `ORUN_CI` gate) | A bootstrap cannot set a repository variable | design.md §6 |
 | 11 | orun is pinned only where it runs (the `orun-action` `version:` in each workflow); no kiox | `kiox.yaml` pinned a version nothing ran | IMPLEMENTATION-STATUS (PK6) |
 | 12 | Component docs are generated from the manifests and checked in CI | A hand-written copy of the dependency graph and bindings drifts silently | `tooling/catalog/gen-component-docs.py` |
+| 13 | The workers.dev subdomain is read from the Cloudflare connection (`from: connection.cloudflare.workersSubdomain`), not asked; only a hand-run build passes `--set subdomain` | It belongs to the account like its id and has one right answer; a typed one could only be wrong, and wrong showed up after deploy in the build origin and the probes (cirrus-baseline since baseline-v23) | IMPLEMENTATION-STATUS (PK-8) |

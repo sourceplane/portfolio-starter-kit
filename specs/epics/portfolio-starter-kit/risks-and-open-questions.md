@@ -54,8 +54,9 @@ PK-J and PK-K. `baseline-v2`, with both fixed, then went live from the
 console's Build (`portfolio-live`, `bst_R3SZP8S4`): 8m43s end to end, over
 its three landings (IMPLEMENTATION-STATUS, PK5). What `main` builds since
 PK5 — one landing, `01-product`, then `03-docs` — has not been bootstrapped
-live. The first bootstrap from the next tag closes this, and replaces PK5's
-6-minute estimate with a measurement.
+live; `baseline-v3` is the first tag that carries it. The first bootstrap
+from `baseline-v3` closes this, and replaces PK5's 6-minute estimate with a
+measurement.
 
 ## PK-H — A custom domain is the owner's step (ACCEPTED)
 

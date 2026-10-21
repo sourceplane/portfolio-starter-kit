@@ -1,0 +1,25 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-8
+  title: "The subdomain from the Cloudflare connection"
+spec:
+  goal: "The console card stops asking for the workers.dev subdomain and reads it from the Cloudflare connection the build is bound to (`from: connection.cloudflare.workersSubdomain`), as cirrus-baseline does since baseline-v23 — the same account CLOUDFLARE_ACCOUNT_ID and the deploy token come from, so a wrong typed value can no longer surface after deploy in the site's build origin and the probes"
+  affects:
+    - blueprint.yaml
+    - repo-blueprint.yaml
+    - testing/manifest.test.sh
+    - BOOTSTRAP.md
+    - docs/phases/README.md
+    - ai/context/current.md
+    - ai/context/decisions.md
+    - ai/context/open-risks.md
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - "blueprint.yaml's `subdomain` input declares `from: connection.cloudflare.workersSubdomain`, and its comment says why"
+    - testing/manifest.test.sh accepts that source and fails a card whose `spec.requires.integrations` does not list the provider (mutation-checked)
+    - repo-blueprint.yaml, BOOTSTRAP.md and docs/phases/README.md say a console or `--from bst_…` build reads it from the connection and only a hand-run build passes `--set subdomain`
+    - every milestone's status row agrees with the tags, PK5's and PK6's included
+  gates:
+    - checks
