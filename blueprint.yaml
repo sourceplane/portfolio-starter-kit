@@ -59,6 +59,12 @@ spec:
   # already holds says so with `from`. repo-blueprint.yaml declares the same
   # names; `repoPrivate`, `orunWorkspace` and `epicSlug` are build inputs with
   # defaults (or filled from the build's workspace) and are not asked.
+  #
+  # NOR IS THE DOMAIN. The site goes live on workers.dev, and a domain is an
+  # owner's step after the bootstrap: `productdomain` defaults to empty, the
+  # rebrand writes the reserved placeholder `<reponame>.example.com` where
+  # the domain goes, and the site's README ("Custom domain") says how to set
+  # it. Nothing that needs a domain is removed — it waits for one.
   inputs:
     - key: reponame
       label: Repo name
@@ -70,11 +76,6 @@ spec:
       pattern: "^[A-Za-z0-9][A-Za-z0-9 .,'&-]{1,48}$"
       help: The name visitors see — the heading, the page titles, the RSS channel and the Open Graph card.
       example: Acme Notes
-    - key: productdomain
-      label: Site domain
-      pattern: "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$"
-      help: The domain the site will answer on. It does not need to exist — the site goes live on workers.dev first.
-      example: acme.dev
     - key: githuborg
       label: GitHub organisation
       pattern: "^[A-Za-z0-9][A-Za-z0-9-]*$"

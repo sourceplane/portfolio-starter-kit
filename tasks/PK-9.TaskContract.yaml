@@ -1,0 +1,30 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-9
+  title: "The domain is set later"
+spec:
+  goal: "The console no longer asks for the site's domain. A site goes live on workers.dev; productdomain is an optional build input (default empty), the rebrand writes the reserved placeholder <reponame>.example.com where the domain goes (BASE_DOMAIN in intent.yaml, the README's SITE_URL example), the sitemap, RSS, Open Graph and JSON-LD links keep using SITE_URL else the workers.dev URL, and the site's README says how an owner replaces the placeholder once a domain is attached"
+  affects:
+    - blueprint.yaml
+    - repo-blueprint.yaml
+    - tooling/rebrand/rebrand.mjs
+    - testing/rebrand.test.sh
+    - testing/fixtures/acme.json
+    - .github/workflows/baseline.yml
+    - .baseline/product/README.md
+    - BOOTSTRAP.md
+    - README.md
+    - docs/phases/README.md
+    - ai/context/operations.md
+    - ai/context/current.md
+    - ai/context/decisions.md
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - blueprint.yaml declares no productdomain input, and repo-blueprint.yaml's productdomain is optional with an empty default
+    - "rebrand.mjs no longer requires productdomain and brands <reponame>.example.com when it is empty (testing/rebrand.test.sh)"
+    - testing/fixtures/acme.json carries no domain, so the leak gate and the offline bootstrap exercise what a console build supplies
+    - the contract tests, the docs check, the leak gate and the offline bootstrap are green
+  gates:
+    - checks

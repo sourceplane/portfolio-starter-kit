@@ -78,7 +78,8 @@ own domain:
    `portfolio-starter-kit-web-prod` → Settings → Domains & Routes → Add →
    Custom domain). Do the same for stage with a subdomain if you want one.
 2. Set the environment's public origin in `intent.yaml`, so sitemap, RSS,
-   Open Graph and JSON-LD links use it:
+   Open Graph and JSON-LD links use it (until then they use the workers.dev
+   URL):
 
    ```yaml
    environments:
@@ -86,6 +87,11 @@ own domain:
        env:
          SITE_URL: https://portfolio-starter-kit.example.com
    ```
+
+   The site was born with the reserved placeholder
+   `portfolio-starter-kit.example.com` where its domain goes: that example,
+   and `BASE_DOMAIN` under each environment (dev, stage and prod) in
+   `intent.yaml`. Replace it with your domain in the same change.
 
 3. Merge. The next deploy of `apps/web` builds with the new origin. (A change
    to `intent.yaml` alone deploys nothing — touch `apps/web` in the same pull

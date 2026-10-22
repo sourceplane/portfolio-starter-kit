@@ -52,7 +52,7 @@ cd portfolio-starter-kit
 orun new --blueprint repo-blueprint.yaml \
   --out ~/sites/acme-notes --run-hooks --resume \
   --set reponame=acme-notes --set productname="Acme Notes" \
-  --set productdomain=acme.dev --set githuborg=acme-inc \
+  --set githuborg=acme-inc \
   --set orunWorkspace=ws_XXXXXXXX \
   --set subdomain=<workers-dev-subdomain>
 ```
@@ -89,9 +89,13 @@ orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-notes --run-hooks \
 
 Every later phase reads the identity back from `.rebrand/values.json` in the
 placed tree, but the blueprint's **required** inputs — `reponame`,
-`productname`, `productdomain`, `githuborg` — are validated before anything
-runs, so pass them every time (a `--values` file is easier). The full guide,
-one page per phase: [docs/phases/README.md](docs/phases/README.md).
+`productname`, `githuborg` — are validated before anything runs, so pass them
+every time (a `--values` file is easier). The domain is not one of them: the
+site goes live on workers.dev, and `productdomain` defaults to empty, which
+brands the reserved placeholder `<reponame>.example.com` into `BASE_DOMAIN`
+for an owner to replace when they attach a domain (README, "Custom domain").
+Pass `--set productdomain=` only for a site that already has its domain.
+The full guide, one page per phase: [docs/phases/README.md](docs/phases/README.md).
 
 | flag | what it does |
 |---|---|
@@ -136,7 +140,8 @@ orun new --blueprint repo-blueprint.yaml \
   page is `apps/web/app/page.tsx`; the name and source link are
   `apps/web/app/site.ts`. Every merge to `main` redeploys.
 - **Custom domain**: attach it to the Worker in Cloudflare, then set
-  `SITE_URL` for the environment in the site's `intent.yaml` (its README,
+  `SITE_URL` for the environment in the site's `intent.yaml` and replace the
+  placeholder `<reponame>.example.com` in its `BASE_DOMAIN` (its README,
   "Custom domain"). There is no domain phase: attaching a domain needs zone
   permissions the brokered `workers-deploy` token does not carry.
 - **Refresh the record**: re-run `--phase 03-docs`; it is idempotent.
@@ -189,7 +194,7 @@ at the tag and refuses the whole catalogue if it 404s.
 | Convergence failed AFTER the PR merged; re-running lands nothing | expected on its own — the files are on main. Re-run the phase (`--phase 01-product`, `--redo 01-product`, or the console's Retry): its `retouch` hook gives the landing a diff and the site redeploys |
 | The site's `intent.yaml` says `workspace: ws_SET_ME` | `orunWorkspace` was empty and the build ran outside a workspace; set it and re-run `01-product` |
 | A bootstrap stopped before `03-docs`; prod no longer waits on stage | the gate is deferred, not dropped: run `03-docs`, or `node tooling/bootstrap/promotion.mjs --restore --file <site>/intent.yaml` |
-| `✕ input "productdomain" is required` | all four required inputs must be set on every invocation, single-phase ones included |
+| `✕ input "productname" is required` | all three required inputs (`reponame`, `productname`, `githuborg`) must be set on every invocation, single-phase ones included |
 | `unknown flag: --phase` or a parse error in the blueprint | the CLI is below the v2.58.11 floor |
 | `01-product` lanes fail in `build-app`: `Symlink apps/web/node_modules/next is invalid, it points out of the filesystem root` | the site's intent pins stack-tectonic ≥ 0.20.0, whose lane-scoped install links each job's node_modules out of its tree, which Next 16's Turbopack refuses. Pin 0.19.0 (baseline-v2 does; `intent.yaml` says why) |
 | `01-product`'s convergence reported green, then `verify` got 404 from both URLs | a second workflow ran on the push to main and the watch took its run (baseline-v1's `checks.yml`). baseline-v2 runs `checks.yml` on pull requests only; read the CI run on main for the real result |
