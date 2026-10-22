@@ -23,7 +23,7 @@ for the design, the milestones and the as-built status.
 git clone --depth 1 --branch <baseline-tag> https://github.com/sourceplane/portfolio-starter-kit
 cd portfolio-starter-kit
 orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-notes --run-hooks --resume \
-  --set reponame=acme-notes --set productname="Acme Notes" --set productdomain=acme.dev \
+  --set reponame=acme-notes --set productname="Acme Notes" \
   --set githuborg=acme-inc --set subdomain=<workers-dev-subdomain>
 ```
 

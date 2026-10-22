@@ -77,6 +77,14 @@ check "the build origin: worker name and subdomain" \
 check "the placeholder domain is the product's domain, not a renamed slug" \
   "$acme" intent.yaml '      BASE_DOMAIN: portfolio-starter-kit.example.com' \
   '      BASE_DOMAIN: acme.dev'
+check "no domain given: the reserved placeholder, for an owner to replace later" \
+  '{"reponame":"acme-notes","productname":"Acme Notes","githuborg":"acme-inc","subdomain":"acme"}' \
+  intent.yaml '      BASE_DOMAIN: portfolio-starter-kit.example.com' \
+  '      BASE_DOMAIN: acme-notes.example.com'
+check "an empty domain is no domain" \
+  '{"reponame":"acme-notes","productname":"Acme Notes","productdomain":""}' \
+  intent.yaml '      BASE_DOMAIN: portfolio-starter-kit.example.com' \
+  '      BASE_DOMAIN: acme-notes.example.com'
 check "the repo slug" \
   "$acme" package.json '  "name": "portfolio-starter-kit",' \
   '  "name": "acme-notes",'

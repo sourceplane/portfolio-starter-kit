@@ -89,7 +89,7 @@ orun integrations list --org <ws> --json && orun cloud check --org <ws>
 | publish a post | add `apps/web/app/blog/posts/<slug>.mdx`, merge |
 | deploy a change | merge to `main`; watch the run; failed lanes → `gh run rerun --failed` |
 | redeploy without a change | edit the last line of `apps/web/component.yaml` (`# orun: redeploy <reason> <stamp>`) and merge — it is a deploy trigger, nothing reads it |
-| serve a custom domain | attach it to the Worker in Cloudflare, set `SITE_URL` for the environment in `intent.yaml` (README, "Custom domain") |
+| serve a custom domain | attach it to the Worker in Cloudflare, set `SITE_URL` for the environment in `intent.yaml`, and replace the placeholder `portfolio-starter-kit.example.com` in `intent.yaml`'s `BASE_DOMAIN` (dev, stage and prod) with it (README, "Custom domain") |
 | add a runtime secret | `orun secrets set <KEY> --org <ws> --env <env>` |
 | headless credentials | `ORUN_TOKEN` (workspace-scoped) + `GITHUB_TOKEN` |
 

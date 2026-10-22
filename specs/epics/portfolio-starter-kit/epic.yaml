@@ -51,3 +51,9 @@ spec:
         - "every milestone's status row agrees with the tags"
         - "the console card reads subdomain from the Cloudflare connection (from: connection.cloudflare.workersSubdomain), as cirrus-baseline since baseline-v23"
       tasks: [PK-7, PK-8]
+    - name: "PK7 — the domain is set later"
+      exitCriteria:
+        - "the console card asks for no domain: a site goes live on workers.dev, and productdomain is an optional build input that defaults to empty"
+        - "a site built without a domain is branded with the reserved placeholder <reponame>.example.com wherever the domain goes (BASE_DOMAIN in intent.yaml, the README's SITE_URL example), its sitemap, RSS, Open Graph and JSON-LD links keep the workers.dev origin until an owner sets SITE_URL, and its README says how an owner sets the real one"
+        - "Baseline CI places, leak-checks and plans a site built with no domain"
+      tasks: [PK-9]
