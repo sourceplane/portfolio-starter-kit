@@ -122,12 +122,22 @@ ignore:
   - "**/next-env.d.ts"
   # `orun new` snapshots the WORKING TREE, not the git index: an operator's
   # local environment files would otherwise be copied into somebody else's
-  # repository. `.env.example` is not among them, and ships.
+  # repository. `.env.example` is not among them, and ships. orun's ignore has
+  # no negation, so "every `.env.<x>` but the example" is `.env.[^e]*` (a
+  # glob is matched against the file's basename too, so `**/` is any depth):
+  # `.env.local`, `.env.production`, `.env.development`, `.env.test`, … and
+  # `.env.*.local` for the rest.
   - "**/.env"
-  - "**/.env.local"
+  - "**/.env.[^e]*"
   - "**/.env.*.local"
   - "**/.dev.vars"
   - "**/.dev.vars.*"
+  # Terraform state and its working directory. No component here has any,
+  # but state holds provider secrets in clear, so a stray local apply must
+  # never travel either.
+  - .terraform
+  - "**/*.tfstate"
+  - "**/*.tfstate.*"
   # THE FACTORY'S OWN LANES. `github-workflows` copies the whole of `.github`,
   # so without these two entries every site built from this baseline would
   # carry them — `baseline.yml` runs `testing/*.sh`, which no module places,
@@ -200,6 +210,14 @@ modules:
     source: baseline
     from: .baseline/product/README.md
     to: README.md
+  # The site's entry page for a coding agent: what to read first, how a
+  # change lands, what not to touch. The console's hand-off ends "Then clone
+  # <repo> and start building on it", and this is the page that start reads.
+  - name: root-agents
+    mode: copy
+    source: baseline
+    from: .baseline/product/AGENTS.md
+    to: AGENTS.md
   - name: github-workflows
     mode: copy
     source: baseline
@@ -295,6 +313,7 @@ hooks:
   preInstantiate:
     - id: epic
       uses: orun.task/ensure@v1
+      narrate: 'Epic {{ .hooks.epic.outputs.key }} is open.'
       with:
         kind: epic
         slug: "{{ .inputs.epicSlug }}"
@@ -385,12 +404,20 @@ phases:
     title: The site, built in one landing
     description: The whole tree — manifests, tooling, CI, the identity and the site — branded, landed as one pull request, and deployed to stage and prod by one convergence.
     expectedMinutes: 5
+    # THE PANEL PRINTS THESE VERBATIM, so each is one short clause that is
+    # true whenever it is shown; the console draws the timing itself.
+    #
+    # NO `await` LINE, in either phase, on purpose. A waiting event is also
+    # what `requires.probe` sends while it waits on a provider connection,
+    # not only the convergence, so no fixed sentence is true for all of
+    # them. With none authored the engine writes "<title>: <what it waits
+    # on>" from the event's own reason, and an engine too old to carry one
+    # says "<title> is waiting." — both true.
     narrate:
-      start:  "Creating the repository and landing the whole site in one pull request — intent, CI, tooling, the pages, the posts, the feed and the Open Graph images. Then one convergence builds it with OpenNext and deploys it to stage and prod side by side. Usually about {{ .meta.expectedMinutes }} minutes."
-      await:  "The site is building and deploying on both environments. The Next.js build is the long pole; nothing is stuck."
-      done:   "{{ .inputs.reponame }} is live on stage and prod — {{ .meta.files }} files on main, branded as {{ .inputs.productname }}. That took {{ .meta.elapsed }}."
-      failed: "The site did not come up. The failing lane above names the step — the build, the deploy or the smoke — and a provider error is in its log."
-    modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-gitignore, root-intent, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode, web, web-tests]
+      start:  'Landing the site in one pull request and deploying it to stage and prod.'
+      done:   '{{ .inputs.reponame }} is live on stage and prod, branded as {{ .inputs.productname }}.'
+      failed: 'The site build stopped short; the step that stopped says why.'
+    modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-agents, root-gitignore, root-intent, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode, web, web-tests]
     # THE PLATFORM MUST BE ABLE TO SEE THE REPOSITORY BEFORE IT EXISTS. Every
     # phase lands a pull request that files under its task, and the platform
     # learns of a PR only through the GitHub App installation on the account
@@ -501,10 +528,12 @@ phases:
         # resolve. The lanes and Checks install with --frozen-lockfile.
         - id: pnpm-lockfile
           run: ["pnpm", "install", "--lockfile-only"]
-        # The repo has to exist before there is anywhere to land.
+        # The repo has to exist before there is anywhere to land. Its line
+        # reads the action's outputs, so it is true whether this build found
+        # the repository or created it.
         - id: repo
           uses: orun.repo/ensure@v1
-          narrate: "The repository exists at {{ .inputs.githuborg }}/{{ .inputs.reponame }}."
+          narrate: '{{ .hooks.repo.outputs.fullName }} is ready{{ if eq .hooks.repo.outputs.created "true" }} — created for this build{{ end }}.'
           with:
             owner: "{{ .inputs.githuborg }}"
             name: "{{ .inputs.reponame }}"
@@ -517,6 +546,7 @@ phases:
         # so it is best effort and `check` is the gate — an unlinked
         # repository stops here, naming the fix, instead of in every lane.
         - id: link
+          narrate: '{{ .inputs.githuborg }}/{{ .inputs.reponame }} is linked to the workspace.'
           run:
             - bash
             - -c
@@ -534,14 +564,18 @@ phases:
         # template. The deploy lane binds both keys (the workers-assets
         # composition's `secretBindings`). Keys that already exist are kept.
         # After the link, before the landing whose convergence uses them.
+        # Their lines are static: a hook id with a `-` cannot be named in a
+        # template, and "in place" is true whether a key was minted or kept.
         - id: secret-workers-deploy
           uses: orun.integrations/reconcile@v1
+          narrate: 'CLOUDFLARE_API_TOKEN is in place, brokered from your Cloudflare connection.'
           with:
             provider: cloudflare
             keys: [CLOUDFLARE_API_TOKEN]
             template: workers-deploy
         - id: secret-account-id
           uses: orun.integrations/reconcile@v1
+          narrate: 'CLOUDFLARE_ACCOUNT_ID is in place, read from your Cloudflare connection.'
           with:
             provider: cloudflare
             keys: [CLOUDFLARE_ACCOUNT_ID]
@@ -553,18 +587,23 @@ phases:
         # because the merge runs the site's build, deploy and smoke on
         # main moments later, for real, and the convergence after the merge
         # is what `await` watches to green.
+        # A re-run whose tree main already has lands nothing (`landed` is
+        # "false"), and the line says so rather than claiming a merge.
         - id: land
           uses: orun.pr/land@v1
-          narrate: "The site is merged into main."
+          label: Site
+          narrate: '{{ if eq .hooks.land.outputs.landed "true" }}PR #{{ .hooks.land.outputs.number }} is merged into main.{{ else }}Nothing new to land; main already has it.{{ end }}'
           with:
             task: "{{ .phase.hooks.task.outputs.key }}"
             epic: "{{ .inputs.epicSlug }}"
             branchSlug: "{{ .phase.name }}"
             title: "feat: {{ .inputs.productname }}, the whole site from the portfolio starter kit"
       await:
+        # With nothing landed there is no merge commit, and the watch takes
+        # main's newest run — or finds none, which is an answer, not a wait.
         - id: converge
           uses: orun.run/watch@v1
-          narrate: "The site built, deployed and passed its smoke, and the convergence run came back green."
+          narrate: '{{ if eq .hooks.converge.outputs.conclusion "none" }}There is no convergence run on main to watch.{{ else }}The convergence run on main is green: the site is built, deployed and smoke-tested.{{ end }}'
           with:
             # The run for the commit THIS landing merged — the branch's newest
             # run, read the moment the merge returns, may be another push's.
@@ -588,10 +627,9 @@ phases:
     description: The live-deployment manifest, rendered from probed reality, and the promotion gate put back.
     expectedMinutes: 1
     narrate:
-      start:  "Now recording what was actually built — probing every URL and writing the deployment manifest into the repository."
-      await:  "Probing the live endpoints one last time."
-      done:   "ai/context/deployment.md now records the live deployment, written from probed facts, and prod waits on stage again. {{ .meta.elapsed }}."
-      failed: "The deployment record did not land. The site is still live; only the write-up is missing."
+      start:  'Recording the live deployment in the repository.'
+      done:   'ai/context/deployment.md records the live deployment, and prod waits on stage again.'
+      failed: 'The deployment record stopped short; the step that stopped says why.'
     modules: []
     requires:
       phases: [01-product]
@@ -619,20 +657,25 @@ phases:
         - id: dev-lanes
           run: ["node", "{{ .baseline.dir }}/tooling/bootstrap/dev-lanes.mjs", "--restore"]
         - id: render
+          narrate: 'The deployment record is written from what each live URL answered.'
           run: ["bash", "{{ .baseline.dir }}/hooks/render-deployment-docs.sh", ".", "{{ .inputs.orunWorkspace }}", "{{ .baseline.dir }}"]
         # Checked by `plan` alone, like 01-product's: a bootstrap branch skips
         # the lanes and checks.yml's job, and nothing here builds.
         - id: land
           uses: orun.pr/land@v1
-          narrate: "The deployment record is merged into main."
+          label: Docs
+          narrate: '{{ if eq .hooks.land.outputs.landed "true" }}PR #{{ .hooks.land.outputs.number }} is merged into main.{{ else }}Nothing new to land; main already has it.{{ end }}'
           with:
             task: "{{ .phase.hooks.task.outputs.key }}"
             epic: "{{ .inputs.epicSlug }}"
             branchSlug: "{{ .phase.name }}"
             title: "docs(deployment): record the live deployment state"
       await:
+        # `quiet`: the addresses are 01-product's facts already, and a second
+        # copy from this re-probe would only repeat them.
         - id: verify
           uses: orun.http/probe@v1
+          quiet: true
           narrate: "Every live URL answered on the final probe."
           with:
             urls:

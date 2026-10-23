@@ -321,10 +321,10 @@ for path in manifests:
     # refused.
     #
     # ONE DIRECTION ONLY. The blueprint declares more than this file does —
-    # `githuborg`, `epicSlug`, `domain`, `orunWorkspace` and the identity
-    # defaults are how a BUILD is driven, not what a product is configured
-    # with. What must hold is that nothing this file declares arrives at an
-    # engine that cannot take it.
+    # `productdomain`, `repoPrivate`, `orunWorkspace` and `epicSlug` are how a
+    # BUILD is driven, not what a product is configured with. What must hold
+    # is that nothing this file declares arrives at an engine that cannot
+    # take it.
     if bp is not None:
         bp_inputs = set((bp.get("inputs") or {}).keys())
         if not bp_inputs:
@@ -338,12 +338,12 @@ for path in manifests:
     # ── …AND THE OTHER DIRECTION, for REQUIRED inputs only ───────────────
     #
     # The check above is one-directional on purpose: the blueprint declares
-    # more than this card does, because `epicSlug`, `domain` and the identity
-    # defaults are how a BUILD is driven rather than what a product is
-    # configured with. That tolerance had no floor, and `githuborg` fell
-    # through it — `required: true` in the blueprint, absent from this card,
-    # so a platform build resolved the card's inputs, handed them to the
-    # runner and died on its first step:
+    # more than this card does, because `productdomain`, `repoPrivate`,
+    # `orunWorkspace` and `epicSlug` are how a BUILD is driven rather than
+    # what a product is configured with. That tolerance had no floor, and
+    # `githuborg` fell through it — `required: true` in the blueprint, absent
+    # from this card, so a platform build resolved the card's inputs, handed
+    # them to the runner and died on its first step:
     #
     #     ✕ input "githuborg" is required
     #

@@ -15,8 +15,8 @@ phase may require this one.)
 | `promotion` | restores `environments.prod.promotion` — from now on prod deploys only after stage |
 | `dev-lanes` | restores dev's activation on pushes to main |
 | `render` | `hooks/render-deployment-docs.sh`: probes `/` and `/rss` on both environments (and each `SITE_URL`, when set), lists the secrets by name and the workspace's integrations, and regenerates `ai/context/deployment.md` and the README's live-deployment section |
-| `land` | one PR, checked by `plan` alone and merged on green. It touches no component, so it deploys nothing |
-| `verify` (await) | the same probe `01-product` ended on |
+| `land` | one PR, checked by `plan` alone and merged on green, labelled `Docs` in the console. It touches no component, so it deploys nothing |
+| `verify` (await) | the same probe `01-product` ended on, `quiet`: the console already holds both addresses from `01-product`, so this one files none |
 
 ## Re-running it
 

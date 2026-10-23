@@ -1,0 +1,27 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: PK-10
+  title: "The build reads true, and a site starts its agent"
+spec:
+  goal: "Every line the console's build panel prints from this blueprint is short and true whenever it is shown (orun-cloud saas-build-panel BV4): the repo, link, secrets, render and landing hooks say what they made, from their outputs where they have them; no phase authors an await line, so the engine names what it waits on; phase start lines are one clause. Each landing is labelled and the docs-phase re-probe is quiet. A site ships an AGENTS.md that tells a coding agent what to read first, how a change lands and what not to touch; its README links Orun's real home and the new page; and the blueprint's ignore list keeps every local .env and Terraform state out of a site"
+  affects:
+    - repo-blueprint.yaml
+    - .baseline/product/**
+    - testing/phases.test.sh
+    - testing/manifest.test.sh
+    - testing/leak.test.sh
+    - testing/placement.test.sh
+    - README.md
+    - BOOTSTRAP.md
+    - docs/phases/**
+    - ai/context/**
+    - specs/**
+    - tasks/**
+  doneWhen:
+    - "every hook narrate and phase line in repo-blueprint.yaml is true for each outcome its hook can report (found or created, landed or nothing to land), asserts no state word, and no phase declares narrate.await, which testing/phases.test.sh allows for that slot alone"
+    - "both landings carry `label:` and 03-docs's verify `quiet: true`, and orun at the bootstrap floor (v2.58.11) still reads the blueprint"
+    - "a site is placed with AGENTS.md at its root, branded, every page it links present (testing/placement.test.sh), and the leak gate requires it and reads it for provenance prose"
+    - "a local .env.<mode>, .terraform or *.tfstate in the working tree is not placed, and the leak gate fails a tree that would ship one"
+  gates:
+    - checks

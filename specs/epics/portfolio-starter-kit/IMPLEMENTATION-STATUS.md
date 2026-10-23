@@ -13,6 +13,7 @@ the code departed from `design.md` or from the upstream template.
 | PK5 — one landing | ✅ Shipped | [#6](https://github.com/sourceplane/portfolio-starter-kit/pull/6) (PK-6), tagged `baseline-v3` — the first tag of the one-landing shape; not yet proven by a live bootstrap (risk PK-G) |
 | PK6 — the cirrus standard | ✅ Shipped | [#7](https://github.com/sourceplane/portfolio-starter-kit/pull/7) (PK-7), [#8](https://github.com/sourceplane/portfolio-starter-kit/pull/8) (PK-8), tagged `baseline-v3` |
 | PK7 — the domain is set later | ✅ Shipped | [#9](https://github.com/sourceplane/portfolio-starter-kit/pull/9) (PK-9), tagged `baseline-v4` |
+| PK8 — the build reads true | ✅ Shipped | [#10](https://github.com/sourceplane/portfolio-starter-kit/pull/10) (PK-10), not yet tagged |
 
 ## Departures from the upstream template
 
@@ -191,6 +192,82 @@ Verified:
   `SITE_URL`; the README's example and `ai/context/operations.md` name that
   same string (6 lines, 3 files); `rebrand --verify` finds no leftover.
 - `orun task check PK-9` complete.
+
+## The build reads true (PK8, PK-10)
+
+orun-cloud's build panel (epic `saas-build-panel`) now prints each hook's
+`narrate:` line verbatim as the build's progress and a phase's waiting
+line as what it is waiting on, and ends by handing the site to
+the person's agent (`…Then clone <repo> and start building on it.`). This is
+the baseline's share of that epic's BV4: every line true whenever it is
+shown, short, and a site an agent can start in.
+
+| Line | Before | After | Why |
+|---|---|---|---|
+| `repo` | "The repository exists at `<org>/<repo>`." | `fullName` from the action, "— created for this build" when it was | true for a repository found and one created |
+| `land` (both) | "The site is merged into main." / "The deployment record is merged into main." | "PR #`<n>` is merged into main.", or "Nothing new to land; main already has it." | names the pull request, and a re-run that lands nothing no longer claims a merge |
+| `link`, `secret-*`, `render`, `epic` | no line | a line each; the secrets' are static (a hook id with `-` cannot be named in a template) | each made something a reader should see |
+| `converge` | "…the convergence run came back green." (long) | "The convergence run on main is green: …", or "There is no convergence run on main to watch." | with nothing landed the watch takes main's newest run, or finds none |
+| phase `await` (both) | "The site is building and deploying…" / "Probing the live endpoints…" | none authored: the engine writes "`<title>`: `<what it waits on>`" from the waiting event's reason ("`<title>` is waiting." on an engine that carries none) | a waiting event is also what `requires.probe` sends while it waits on a provider connection, when "building" is false, so no fixed sentence is true for every wait |
+| phase `start` | 01-product's was 294 characters, with a time estimate | one clause each | the console draws the timing itself |
+| phase `done`, `failed` | elapsed time; "the failing lane above names the step"; "the site is still live" | the outcome only; "the step that stopped says why" | a failure in the landing or the link has no lane, and a failed re-probe means the site is not answering |
+
+And, for the engine's facts (orun with saas-build-panel BV3; older orun
+ignores both keys): `label: Site` and `label: Docs` on the landings, and
+`quiet: true` on 03-docs's re-probe, whose addresses 01-product already
+reported.
+
+- `testing/phases.test.sh` still requires `start`, `done` and `failed`, and
+  lets a phase leave `await` to the engine.
+- **`AGENTS.md`.** A site ships one (`.baseline/product/AGENTS.md`, module
+  `root-agents`): what the site is; what to read first (README →
+  `ai/context/operations.md` → `ai/context/deployment.md` →
+  `apps/web/docs/overview.md` → `apps/web/app/site.ts`); how a change lands
+  (desired state, `orun plan --changed`, one task one pull request, the
+  merge's run is the deployment); what not to touch. The site's README links
+  it, and links Orun at github.com/sourceplane/orun rather than an unrelated
+  site. The leak gate requires it and reads it for provenance prose; the
+  offline bootstrap checks it is branded and that every page it links exists
+  in the site. A site is placed with 70 files.
+- **`ignore`.** It kept `.env`, `.env.local` and `.env.*.local` out, but not
+  `.env.production`, `.env.development`, `.env.test` or Terraform state:
+  `**/.env.[^e]*` (every `.env.<x>` but `.env.example`), `.terraform`,
+  `**/*.tfstate` and `**/*.tfstate.*` now do, and the leak gate fails a tree
+  that would ship one.
+- `testing/manifest.test.sh` no longer names a `domain` input; the inputs
+  the card leaves to the build are `productdomain`, `repoPrivate`,
+  `orunWorkspace` and `epicSlug`.
+- Unchanged, and checked: `expectedMinutes` is 6 on the card, 5 + 1 across
+  the phases, and "about six minutes" in its description.
+
+Verified:
+
+- `testing/{manifest,phases,coverage,rebrand,retouch,bootstrap-defer}.test.sh`
+  green; `gen-component-docs.py --check` green (2 components).
+- `orun new --status` with the CI's inputs at v2.58.11 (the bootstrap
+  floor), at orun main and at orun with BV3: `01-product` pending (70
+  files), `03-docs` hook-only.
+- Every narration line rendered through BV3's own `hookNarration` and
+  `renderNarration` over each outcome its hook reports (repository found and
+  created, landed and nothing to land, run green and none): each renders, and
+  none falls back. Each phase's waiting event, with no line authored, reads
+  "`<title>`: `<reason>`" (e.g. "The site, built in one landing: waiting for
+  github, cloudflare to be connected in workspace …"), and "`<title>` is
+  waiting." when the event carries no reason.
+- `testing/leak.test.sh` (v2.58.11, main, BV3): 70 files derived. With a
+  canary `.env`, `.env.local`, `.env.production`, `.env.development`,
+  `.env.test`, `.env.staging`, `.env.production.local`, `.dev.vars`,
+  `.dev.vars.stage`, `terraform.tfstate`, `terraform.tfstate.backup`,
+  `.terraform/…` and `terraform.tfstate.d/…/terraform.tfstate` in the
+  working tree, none is derived; with the old `ignore` the leak gate fails
+  on eight of them.
+- `testing/placement.test.sh` (v2.58.11, main, BV3): 70 files placed, both
+  landings, `AGENTS.md` branded with every linked page present, the site's
+  own `orun plan` green, `--resume` changes nothing. In the bootstrapped
+  site, `orun plan --changed` (the command `AGENTS.md` names) plans `web`'s
+  verify on dev, stage and prod for a change under `apps/web`.
+- `testing/e2e.test.sh` (orun main, and v2.78.4 — the lane pin) green.
+- `orun task check PK-10` complete.
 
 ## Verified (PK6)
 

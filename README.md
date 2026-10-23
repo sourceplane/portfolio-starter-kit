@@ -36,9 +36,9 @@ one pull request in the new repository.
 [docs/phases/](docs/phases/README.md) has a page per phase.
 
 The new repository receives the **site only** — the app, its tests, its CI,
-its tooling, a README of its own and its operating contract — renamed
-throughout to the site's name, repository and Cloudflare Worker. None of this
-repository's machinery ships.
+its tooling, a README and an `AGENTS.md` of its own and its operating
+contract — renamed throughout to the site's name, repository and Cloudflare
+Worker. None of this repository's machinery ships.
 
 | What makes it a baseline | Where |
 |---|---|
@@ -48,7 +48,7 @@ repository's machinery ships.
 | The rename engine | `tooling/rebrand/rebrand.mjs` |
 | The bootstrap's helpers (deferrals, redeploy marker, work-tree strip) | `tooling/bootstrap/` |
 | The deployment-record renderer | `hooks/render-deployment-docs.sh` |
-| The site's README and context pack | `.baseline/product/README.md`, `ai/context/` |
+| The site's README, agent page and context pack | `.baseline/product/README.md`, `.baseline/product/AGENTS.md`, `ai/context/` |
 | The baseline's tests: contract, leak, offline bootstrap, end to end | `testing/`, `.github/workflows/baseline.yml` |
 | Cutting a `baseline-vN` tag | `.github/workflows/tag.yml` |
 

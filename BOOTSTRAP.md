@@ -104,8 +104,8 @@ The full guide, one page per phase: [docs/phases/README.md](docs/phases/README.m
 | `--until <name>` | places every phase through that one and stops |
 
 What lands in the site is PRODUCT-ONLY: the app, its tests, its CI, its
-tooling, its README and its two context pages. None of this repository's
-machinery (`.baseline/`, the blueprints, `tooling/rebrand`,
+tooling, its README, its `AGENTS.md` and its two context pages. None of this
+repository's machinery (`.baseline/`, the blueprints, `tooling/rebrand`,
 `tooling/bootstrap`, `hooks/`, `testing/`, `docs/phases/`, `specs/`,
 `tasks/`, this file) ships. That promise is a test: `testing/leak.test.sh`
 derives what every phase would place and gates the set, and
@@ -138,7 +138,8 @@ orun new --blueprint repo-blueprint.yaml \
 
 - **Write**: posts are `.mdx` files in `apps/web/app/blog/posts/`; the home
   page is `apps/web/app/page.tsx`; the name and source link are
-  `apps/web/app/site.ts`. Every merge to `main` redeploys.
+  `apps/web/app/site.ts`. Every merge to `main` redeploys. An agent starts
+  at the site's `AGENTS.md`.
 - **Custom domain**: attach it to the Worker in Cloudflare, then set
   `SITE_URL` for the environment in the site's `intent.yaml` and replace the
   placeholder `<reponame>.example.com` in its `BASE_DOMAIN` (its README,

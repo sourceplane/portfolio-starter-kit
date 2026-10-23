@@ -4,10 +4,11 @@
 the pnpm workspace and lockfile, `turbo.json`),
 `.github/workflows` (`ci.yml` and `checks.yml` — the baseline's own
 `baseline.yml` and `tag.yml` are ignored), the shared TypeScript/ESLint
-config and the wrangler renderer, the site's README and its two context
-pages, the identity file `.rebrand/values.json`, `.gitkeep` files for the
-four discovery roots, `apps/web` (the Next.js site, its OpenNext build and its
-deploy contract) and `tests/web` (vitest).
+config and the wrangler renderer, the site's README, its `AGENTS.md` (the
+page a coding agent starts from) and its two context pages, the identity
+file `.rebrand/values.json`, `.gitkeep` files for the four discovery roots,
+`apps/web` (the Next.js site, its OpenNext build and its deploy contract)
+and `tests/web` (vitest).
 
 **Requires** both connections live — GitHub (the App installation on
 `githuborg`) and Cloudflare — probed, waited for up to ten minutes each, so a
@@ -33,7 +34,7 @@ probe runs before anything is created.
 | `link` | `orun cloud link` (best effort) then `orun cloud check` — an unlinked repo stops here |
 | `secret-workers-deploy` | `orun.integrations/reconcile@v1` — ensures `CLOUDFLARE_API_TOKEN`, brokered from the Cloudflare connection with the `workers-deploy` scope |
 | `secret-account-id` | ensures `CLOUDFLARE_ACCOUNT_ID`, the connection fact |
-| `land` | one PR, checked by `plan` alone (a bootstrap branch skips the lanes and Checks) and merged on green |
+| `land` | one PR, checked by `plan` alone (a bootstrap branch skips the lanes and Checks) and merged on green; its pull request is labelled `Site` in the console |
 | `converge` (await) | `orun.run/watch@v1` on the merge commit's run; resumes it up to three times |
 | `verify` (await) | `orun.http/probe@v1` on both workers.dev URLs |
 
