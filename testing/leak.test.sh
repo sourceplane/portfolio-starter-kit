@@ -3,10 +3,10 @@
 #
 # A site built from this baseline is somebody's site, not a copy of this
 # repository. It gets the product: the app, its tests, its CI, its tooling,
-# its README and its two context pages. It does NOT get the factory: the
-# blueprints, the bootstrap and rebrand tooling, the test gates, the task
-# contracts and identity under `.baseline/`, this repository's own epic and
-# task tree, or BOOTSTRAP.md.
+# its README, its AGENTS.md and its two context pages. It does NOT get the
+# factory: the blueprints, the bootstrap and rebrand tooling, the test gates,
+# the task contracts and identity under `.baseline/`, this repository's own
+# epic and task tree, or BOOTSTRAP.md.
 #
 # This asks orun to DERIVE the placement — every file every phase would write
 # — and gates that set. Derivation runs no hooks, contacts nothing and writes
@@ -69,16 +69,18 @@ for p in placed:
             bad(f"{p} would ship — it is the factory, not the site")
 
 # ── nothing local and nothing built ───────────────────────────────────────
-LOCAL = re.compile(r"(^|/)(\.env(\.[^/]*\.local|\.local)?|\.dev\.vars(\..*)?|node_modules|\.next|"
-                   r"\.open-next|\.wrangler|\.turbo|\.orun|next-env\.d\.ts|[^/]*\.tsbuildinfo)(/|$)")
+# Every `.env.<x>` but `.env.example` (which ships), and Terraform state.
+LOCAL = re.compile(r"(^|/)(\.env(\.(?!example$)[^/]+)?|\.dev\.vars(\..*)?|node_modules|\.next|"
+                   r"\.open-next|\.wrangler|\.turbo|\.orun|next-env\.d\.ts|[^/]*\.tsbuildinfo|"
+                   r"\.terraform|[^/]*\.tfstate(\.[^/]*)?)(/|$)")
 for p in placed:
     if LOCAL.search(p):
         bad(f"{p} would ship — a local or built file of whoever ran the bootstrap")
 
-# ── the site's README, not this repository's ──────────────────────────────
+# ── the site's README and agent page, not this repository's ───────────────
 if "README.md" not in placed:
     bad("README.md would not ship")
-for must in (".github/workflows/ci.yml", ".github/workflows/checks.yml",
+for must in ("AGENTS.md", ".github/workflows/ci.yml", ".github/workflows/checks.yml",
              "apps/web/component.yaml", "apps/web/app/site.ts", "tests/web/component.yaml",
              ".rebrand/values.json", "apps/web/.env.example"):
     if must not in placed:
@@ -94,6 +96,7 @@ PROVENANCE = re.compile(
     re.I,
 )
 SOURCES = {"README.md": ".baseline/product/README.md",
+           "AGENTS.md": ".baseline/product/AGENTS.md",
            "ai/context/operations.md": "ai/context/operations.md",
            "ai/context/deployment.md": "ai/context/deployment.md"}
 for shipped, src in SOURCES.items():

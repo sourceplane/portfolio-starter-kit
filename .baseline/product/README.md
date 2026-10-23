@@ -4,6 +4,9 @@ A portfolio and blog — MDX posts with syntax highlighting, an RSS feed, a
 sitemap, JSON-LD and dynamic Open Graph images — on **Cloudflare Workers +
 Static Assets** through [`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare).
 
+Working on it with a coding agent? [AGENTS.md](AGENTS.md) says what to read
+first, how a change lands and what not to touch.
+
 ## Live deployment
 
 <!-- 03-docs:begin -->
@@ -54,7 +57,7 @@ Two optional build-time variables (`apps/web/.env.example`):
 
 ## How it deploys
 
-Merges to `main` converge through [Orun](https://opencode.ai/docs):
+Merges to `main` converge through [Orun](https://github.com/sourceplane/orun):
 `.github/workflows/ci.yml` plans the changed components and runs each lane
 against the workspace in `intent.yaml`. The site deploys to `stage`, then to
 `prod` once stage has converged on the same commit; `dev` only verifies. The

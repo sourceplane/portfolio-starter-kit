@@ -40,7 +40,7 @@ if not phases:
 
 PARTITION = {
     "01-product": ["ai-deployment", "ai-operations", "discovery-roots", "github-workflows",
-                   "rebrand-values", "root-gitignore", "root-intent",
+                   "rebrand-values", "root-agents", "root-gitignore", "root-intent",
                    "root-package-json", "root-pnpm-lock",
                    "root-pnpm-workspace", "root-readme", "root-turbo", "tooling-eslint",
                    "tooling-tsconfig", "tooling-wire", "vscode", "web", "web-tests"],
@@ -169,9 +169,12 @@ for page in sorted(pages - set(names)):
     bad(f"docs/phases/{page}.md documents a phase repo-blueprint.yaml does not declare")
 
 # ── narration: authored here, printed from state (Cirrus's rules) ─────────
+# `waitingOn` is what a waiting event waits on — a provider connection the
+# `requires.probe` asks for, or the run an await hook watches — which the
+# engine sets on every `waiting` event it emits.
 META_AT = {
     "start": {"files", "expectedMinutes"},
-    "await": {"files", "expectedMinutes"},
+    "await": {"files", "expectedMinutes", "waitingOn"},
     "failed": {"files", "expectedMinutes"},
     "done": {"files", "expectedMinutes", "elapsed", "next"},
 }

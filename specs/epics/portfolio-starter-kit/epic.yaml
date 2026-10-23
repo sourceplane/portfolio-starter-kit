@@ -57,3 +57,10 @@ spec:
         - "a site built without a domain is branded with the reserved placeholder <reponame>.example.com wherever the domain goes (BASE_DOMAIN in intent.yaml, the README's SITE_URL example), its sitemap, RSS, Open Graph and JSON-LD links keep the workers.dev origin until an owner sets SITE_URL, and its README says how an owner sets the real one"
         - "Baseline CI places, leak-checks and plans a site built with no domain"
       tasks: [PK-9]
+    - name: "PK8 — the build reads true"
+      exitCriteria:
+        - "every line the console's build panel prints from the blueprint is short and true for each outcome its hook can report, and every phase's await line names what the engine waits on (orun-cloud saas-build-panel BV4)"
+        - "both landings are labelled and 03-docs's re-probe is quiet; orun at the bootstrap floor still reads the blueprint"
+        - "a site ships an AGENTS.md: what to read first, how a change lands, what not to touch"
+        - "no local .env or Terraform state in the working tree is placed into a site"
+      tasks: [PK-10]
