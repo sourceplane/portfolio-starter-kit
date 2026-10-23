@@ -405,13 +405,16 @@ phases:
     description: The whole tree — manifests, tooling, CI, the identity and the site — branded, landed as one pull request, and deployed to stage and prod by one convergence.
     expectedMinutes: 5
     # THE PANEL PRINTS THESE VERBATIM, so each is one short clause that is
-    # true whenever it is shown; the console draws the timing itself. `await`
-    # is generic because it is also the line while `requires.probe` waits on a
-    # provider connection, not only while the convergence runs —
-    # `.meta.waitingOn` is what the engine is actually waiting on.
+    # true whenever it is shown; the console draws the timing itself.
+    #
+    # NO `await` LINE, in either phase, on purpose. A waiting event is also
+    # what `requires.probe` sends while it waits on a provider connection,
+    # not only the convergence, so no fixed sentence is true for all of
+    # them. With none authored the engine writes "<title>: <what it waits
+    # on>" from the event's own reason, and an engine too old to carry one
+    # says "<title> is waiting." — both true.
     narrate:
       start:  'Landing the site in one pull request and deploying it to stage and prod.'
-      await:  'Waiting on {{ .meta.waitingOn }}.'
       done:   '{{ .inputs.reponame }} is live on stage and prod, branded as {{ .inputs.productname }}.'
       failed: 'The site build stopped short; the step that stopped says why.'
     modules: [ai-deployment, ai-operations, discovery-roots, github-workflows, rebrand-values, root-agents, root-gitignore, root-intent, root-package-json, root-pnpm-lock, root-pnpm-workspace, root-readme, root-turbo, tooling-eslint, tooling-tsconfig, tooling-wire, vscode, web, web-tests]
@@ -625,7 +628,6 @@ phases:
     expectedMinutes: 1
     narrate:
       start:  'Recording the live deployment in the repository.'
-      await:  'Waiting on {{ .meta.waitingOn }}.'
       done:   'ai/context/deployment.md records the live deployment, and prod waits on stage again.'
       failed: 'The deployment record stopped short; the step that stopped says why.'
     modules: []

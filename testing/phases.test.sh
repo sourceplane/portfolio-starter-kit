@@ -169,12 +169,9 @@ for page in sorted(pages - set(names)):
     bad(f"docs/phases/{page}.md documents a phase repo-blueprint.yaml does not declare")
 
 # ── narration: authored here, printed from state (Cirrus's rules) ─────────
-# `waitingOn` is what a waiting event waits on — a provider connection the
-# `requires.probe` asks for, or the run an await hook watches — which the
-# engine sets on every `waiting` event it emits.
 META_AT = {
     "start": {"files", "expectedMinutes"},
-    "await": {"files", "expectedMinutes", "waitingOn"},
+    "await": {"files", "expectedMinutes"},
     "failed": {"files", "expectedMinutes"},
     "done": {"files", "expectedMinutes", "elapsed", "next"},
 }
@@ -223,10 +220,16 @@ def check_line(where, line, slot, hook_ids):
 for p in phases:
     n = p.get("narrate") or {}
     ids = {h.get("id") for h in hooks_of(p)}
+    # `await` is the one slot a phase may leave to the engine. A waiting event
+    # is also what `requires.probe` sends while a provider connection is
+    # missing, not only what a convergence watch sends, so no fixed sentence
+    # is true for every wait; with none authored, orun writes "<title>: <the
+    # event's reason>", or "<title> is waiting." when it carries none.
     for slot in ("start", "await", "done", "failed"):
         line = n.get(slot)
         if not line:
-            bad(f"phase {p['name']} declares no narrate.{slot}")
+            if slot != "await":
+                bad(f"phase {p['name']} declares no narrate.{slot}")
             continue
         check_line(f"phase {p['name']} narrate.{slot}", line, slot, ids)
     for h in ((p.get("hooks") or {}).get("await") or []):

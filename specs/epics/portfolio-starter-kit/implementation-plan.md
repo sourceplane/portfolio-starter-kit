@@ -137,19 +137,21 @@ leak-checks and plans a site built with no domain. Shipped in `baseline-v4`.
 ## PK8 — the build reads true (PK-10)
 
 orun-cloud's build panel (epic `saas-build-panel`, BV1) prints each hook's
-`narrate:` line verbatim as the build's progress and the phase's
-`narrate.await` as what it is waiting on, so every line must be true
-whenever it is shown, and short (BV4, this baseline's share):
+`narrate:` line verbatim as the build's progress and a phase's waiting
+line as what it is waiting on, so every line must be true whenever it is
+shown, and short (BV4, this baseline's share):
 
 - the `repo` line reads `fullName` and says when this build created it; each
   `land` line names its pull request, or says there was nothing to land;
   `link`, both secret reconciles and `render` get a line; the run-level
   `epic` hook names the epic's key; the convergence line says when there was
   no run to watch;
-- every phase's `await` is `Waiting on {{ .meta.waitingOn }}.` — it is also
-  the line while `requires.probe` waits on a provider connection; `start`
-  lines are one clause and `done`/`failed` lines say nothing a step can make
-  false (the console draws the timing itself);
+- no phase authors `narrate.await`: a waiting event is also what
+  `requires.probe` sends while it waits on a provider connection, so no
+  fixed sentence is true for every wait, and with none the engine writes
+  `<title>: <what it waits on>` from the event's reason; `start` lines are
+  one clause and `done`/`failed` lines say nothing a step can make false
+  (the console draws the timing itself);
 - `label: Site` / `label: Docs` on the landings and `quiet: true` on 03-docs's
   re-probe (read by orun with saas-build-panel BV3; older orun ignores them);
 - a site ships `AGENTS.md` (`.baseline/product/AGENTS.md`), the page the
@@ -160,8 +162,8 @@ whenever it is shown, and short (BV4, this baseline's share):
   and Terraform state out of a site.
 
 **Done when**
-- `testing/phases.test.sh` accepts every line (and `waitingOn` at `await`), and
-  orun v2.58.11 reads the blueprint
+- `testing/phases.test.sh` accepts every line, and lets a phase leave
+  `await` to the engine; orun v2.58.11 reads the blueprint
 - the leak gate and the offline bootstrap place `AGENTS.md`, branded, with
   every page it links; the leak gate fails a tree that would ship a local
   `.env.<mode>` or Terraform state

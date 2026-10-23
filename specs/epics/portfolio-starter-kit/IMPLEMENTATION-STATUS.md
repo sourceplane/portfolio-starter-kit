@@ -196,8 +196,8 @@ Verified:
 ## The build reads true (PK8, PK-10)
 
 orun-cloud's build panel (epic `saas-build-panel`) now prints each hook's
-`narrate:` line verbatim as the build's progress and a phase's
-`narrate.await` as what it is waiting on, and ends by handing the site to
+`narrate:` line verbatim as the build's progress and a phase's waiting
+line as what it is waiting on, and ends by handing the site to
 the person's agent (`…Then clone <repo> and start building on it.`). This is
 the baseline's share of that epic's BV4: every line true whenever it is
 shown, short, and a site an agent can start in.
@@ -208,7 +208,7 @@ shown, short, and a site an agent can start in.
 | `land` (both) | "The site is merged into main." / "The deployment record is merged into main." | "PR #`<n>` is merged into main.", or "Nothing new to land; main already has it." | names the pull request, and a re-run that lands nothing no longer claims a merge |
 | `link`, `secret-*`, `render`, `epic` | no line | a line each; the secrets' are static (a hook id with `-` cannot be named in a template) | each made something a reader should see |
 | `converge` | "…the convergence run came back green." (long) | "The convergence run on main is green: …", or "There is no convergence run on main to watch." | with nothing landed the watch takes main's newest run, or finds none |
-| phase `await` (both) | "The site is building and deploying…" / "Probing the live endpoints…" | `Waiting on {{ .meta.waitingOn }}.` | it is also the line while `requires.probe` waits on a provider connection, when "building" is false |
+| phase `await` (both) | "The site is building and deploying…" / "Probing the live endpoints…" | none authored: the engine writes "`<title>`: `<what it waits on>`" from the waiting event's reason ("`<title>` is waiting." on an engine that carries none) | a waiting event is also what `requires.probe` sends while it waits on a provider connection, when "building" is false, so no fixed sentence is true for every wait |
 | phase `start` | 01-product's was 294 characters, with a time estimate | one clause each | the console draws the timing itself |
 | phase `done`, `failed` | elapsed time; "the failing lane above names the step"; "the site is still live" | the outcome only; "the step that stopped says why" | a failure in the landing or the link has no lane, and a failed re-probe means the site is not answering |
 
@@ -217,7 +217,8 @@ ignores both keys): `label: Site` and `label: Docs` on the landings, and
 `quiet: true` on 03-docs's re-probe, whose addresses 01-product already
 reported.
 
-- `testing/phases.test.sh` accepts `.meta.waitingOn` at `await`.
+- `testing/phases.test.sh` still requires `start`, `done` and `failed`, and
+  lets a phase leave `await` to the engine.
 - **`AGENTS.md`.** A site ships one (`.baseline/product/AGENTS.md`, module
   `root-agents`): what the site is; what to read first (README →
   `ai/context/operations.md` → `ai/context/deployment.md` →
@@ -249,7 +250,10 @@ Verified:
 - Every narration line rendered through BV3's own `hookNarration` and
   `renderNarration` over each outcome its hook reports (repository found and
   created, landed and nothing to land, run green and none): each renders, and
-  none falls back.
+  none falls back. Each phase's waiting event, with no line authored, reads
+  "`<title>`: `<reason>`" (e.g. "The site, built in one landing: waiting for
+  github, cloudflare to be connected in workspace …"), and "`<title>` is
+  waiting." when the event carries no reason.
 - `testing/leak.test.sh` (v2.58.11, main, BV3): 70 files derived. With a
   canary `.env`, `.env.local`, `.env.production`, `.env.development`,
   `.env.test`, `.env.staging`, `.env.production.local`, `.dev.vars`,
