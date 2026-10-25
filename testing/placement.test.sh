@@ -12,8 +12,7 @@
 #   2. THE OFFLINE BOOTSTRAP (testing/lib/bootstrap.sh) — every phase placed in
 #      order onto what the previous one landed, finished by the blueprint's OWN
 #      `run:` hooks (rebrand, re-tenant, work-tree strip, the deferrals, the
-#      retouch marker, the lockfile, the deployment record), each landing a
-#      commit;
+#      retouch marker, the deployment record), each landing a commit;
 #   3. the product it ends with: branded with no residue, carrying nothing of
 #      the factory, re-tenanted, its gates restored, its record rendered;
 #   4. what the product's own CI would do with the 01-product merge: `orun
@@ -26,9 +25,8 @@
 # testing/e2e.test.sh goes on from here: it installs, builds and serves the
 # product and runs its smoke against it.
 #
-# Needs: orun, node, pnpm, python3 (+PyYAML), git. No credential. The pnpm
-# lockfile check and the deployment-record probes reach the network if they
-# can, and pass without it.
+# Needs: orun, node, pnpm, python3 (+PyYAML), git. No credential. The
+# deployment-record probes reach the network if they can, and pass without it.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"

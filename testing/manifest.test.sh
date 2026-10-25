@@ -83,13 +83,16 @@ def uses(phase, action):
             yield hook
 
 # THE SECRETS THE BOOTSTRAP MINTS. `orun.integrations/reconcile@v1` is what
-# `create-secrets.sh` was written out longhand as: one connection, one scope
-# template, the keys it ensures. Read per key so a hook minting two keys under
-# one template is three facts rather than one.
+# `create-secrets.sh` was written out longhand as: one connection, and per key
+# the scope template it is minted under — `secrets: [{key, template}]`, or
+# `keys` sharing one `template`. Read per key so a hook minting two keys is
+# two facts rather than one.
 blueprint_secrets = {}
 for phase in bp_phases:
     for hook in uses(phase, "orun.integrations/reconcile@v1"):
         w = hook.get("with") or {}
+        for item in (w.get("secrets") or []):
+            blueprint_secrets[item.get("key")] = (w.get("provider"), item.get("template"))
         for key in (w.get("keys") or []):
             blueprint_secrets[key] = (w.get("provider"), w.get("template"))
 

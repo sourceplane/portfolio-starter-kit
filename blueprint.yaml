@@ -22,7 +22,7 @@ metadata:
     syntax highlighting, an RSS feed, a sitemap, JSON-LD and dynamic Open Graph
     images, built by OpenNext into one Cloudflare Worker with Static Assets,
     and CI that deploys it to stage and prod on merge. One provider, one
-    consent, one token, one landing. Live in about six minutes.
+    consent, one token, one landing. Live in about five minutes.
   tags: [portfolio, blog, mdx, cloudflare, nextjs]
 spec:
   source:
@@ -104,11 +104,12 @@ spec:
       from: connection.cloudflare.workersSubdomain
 
   # ── PREVIEW ONLY. repo-blueprint.yaml's `orun.integrations/reconcile@v1`
-  # hooks mint these, brokered, during 01-product. ──────────────────────────
-  # Transcribed from those hooks' own `keys:` and `template:` values, so
-  # testing/manifest.test.sh compares this list to the document that mints
-  # them. The console renders them read-only: no credential is ever typed,
-  # shown or stored. Keys that already exist are kept.
+  # hook mints these, brokered, during 01-product. ──────────────────────────
+  # Transcribed from that hook's own `secrets:` list (each key and its
+  # `template:`), so testing/manifest.test.sh compares this list to the
+  # document that mints them. The console renders them read-only: no
+  # credential is ever typed, shown or stored. Keys that already exist are
+  # kept.
   secrets:
     - key: CLOUDFLARE_API_TOKEN
       provider: cloudflare
@@ -135,9 +136,9 @@ spec:
     # THE BUILD DOCUMENT. There is no umbrella workflow and no agent brief:
     # every phase is declared in it and orun runs it.
     blueprint: repo-blueprint.yaml
-    # Summed from the phases' expectedMinutes. An estimate until a bootstrap
-    # measures it.
-    expectedMinutes: 6
+    # Summed from the phases' expectedMinutes (4 + 1). An estimate until a
+    # bootstrap of this shape measures it.
+    expectedMinutes: 5
     tokenChannel: ORUN_TOKEN_FILE   # how a runner hands over its refreshed token
   verify:
     urls:

@@ -6,7 +6,7 @@ name: Baseline CI
 # placed tree comes up branded and carrying nothing of the factory, and that
 # the site it produces installs, builds, deploys (dry) and serves.
 #
-# ─── WHY THIS IS NOT IN ci.yml OR checks.yml ──────────────────────────────
+# ─── WHY THIS IS NOT IN ci.yml ────────────────────────────────────────────
 #
 # `repo-blueprint.yaml`'s `github-workflows` module copies the WHOLE `.github`
 # directory into every site built from this repository. These jobs run
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: sourceplane/orun-action@v1.2.0
         with:
-          version: v2.58.11
+          version: v2.88.0
       - uses: pnpm/action-setup@v4
         with:
           version: 10.12.1
@@ -100,18 +100,21 @@ jobs:
           git config --global user.name "baseline ci"
           bash testing/placement.test.sh
 
-  # Tier 2. THE SITE IT PRODUCES WORKS: the finished site under the checks
-  # every later pull request of it runs, the stage lane's own build, output
-  # check and dry deploy, and the built Worker served and smoke-tested with
-  # the component's own smoke command. Pinned at the site's lane version,
-  # because that is the orun the site's CI runs.
+  # Tier 2. THE SITE IT PRODUCES WORKS: the finished site installed, its
+  # fixtures rendered, type-checked, linted, tested and built, the stage
+  # lane's own build, output check and dry deploy, and the built Worker served
+  # and smoke-tested with the component's own smoke command. Pinned at the
+  # bootstrap floor (v2.88.0): the offline bootstrap reads the blueprint (its
+  # one `secrets` reconcile, its background task set-up, its landings checked
+  # in the box), and the floor is newer than the site's lane pin (v2.78.4),
+  # which is all the lane steps need.
   site:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: sourceplane/orun-action@v1.2.0
         with:
-          version: v2.78.4
+          version: v2.88.0
       - uses: pnpm/action-setup@v4
         with:
           version: 10.12.1

@@ -11,12 +11,11 @@ phase may require this one.)
 
 | hook | what it does |
 |---|---|
-| `task` (pre) | finds the phase's task and yields its key |
 | `promotion` | restores `environments.prod.promotion` — from now on prod deploys only after stage |
 | `dev-lanes` | restores dev's activation on pushes to main |
-| `render` | `hooks/render-deployment-docs.sh`: probes `/` and `/rss` on both environments (and each `SITE_URL`, when set), lists the secrets by name and the workspace's integrations, and regenerates `ai/context/deployment.md` and the README's live-deployment section |
-| `land` | one PR, checked by `plan` alone and merged on green, labelled `Docs` in the console. It touches no component, so it deploys nothing |
-| `verify` (await) | the same probe `01-product` ended on, `quiet`: the console already holds both addresses from `01-product`, so this one files none |
+| `render` | `hooks/render-deployment-docs.sh`: probes `/` and `/rss` on both environments (and each `SITE_URL`, when set) and regenerates `ai/context/deployment.md` — the identity, the probed URLs, the secrets the deployment uses by name — and the README's live-deployment section. It asks the platform nothing: what the workspace holds right now is on the console's Secrets and Integrations pages, which the record points to |
+| `task` | finds the phase's task and yields its key |
+| `land` | one PR, its commit checked in the box (`checks: local`) and merged, labelled `Docs` in the console. It touches no component, so it deploys nothing — and there is nothing after it to wait for: the render's probes are the phase's check |
 
 ## Re-running it
 
