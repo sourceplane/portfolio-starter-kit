@@ -11,23 +11,30 @@ not separate workflows. The console card the platform renders is
 brokered secrets and the programme, and `testing/manifest.test.sh` holds it
 to what the build document does.
 
-Target wall-clock: **about six minutes** — an estimate summed from the
-phases until a bootstrap measures it: two landings, each checked by `plan`
-alone, one Next.js build per environment, stage and prod deployed side by
-side until `03-docs` restores the promotion gate. baseline-v2 measured 8m43s
-from the console's Build (2026-10-15) over three landings, about 1m50s of it
-the build sandbox starting; `01-product` drops one landing and the Checks
-waits, cirrus-baseline baseline-v22's shape.
+Target wall-clock: **about five minutes** — an estimate summed from the
+phases (4 + 1) until a bootstrap of this shape measures it. The shape: the
+task set-up in the background while ONE landing is placed, branded and
+checked in the box (`orun validate` and `orun plan`, no runner waited for),
+one Next.js build per environment, stage and prod deployed side by side,
+then a short docs landing, checked the same way, that restores the
+promotion gate. baseline-v2 measured 8m43s from the console's Build
+(2026-10-15) over three landings, about 1m50s of it the build sandbox
+starting; `01-product` dropped one landing and the Checks waits
+(cirrus-baseline baseline-v22's shape), and orun v2.88.0's fast shape took
+about a minute out of turso-starter's measured build — the same minute is
+assumed here.
 
 ## 0. What you need
 
 - GitHub org access (repository creation) and a machine with `git`, `node`
   (≥ 22), `pnpm` (10.12.1), `python3` with PyYAML, `curl`, and the `orun`
-  CLI **≥ v2.58.11** — the floor for RUNNING the bootstrap (the phase overlay,
-  landings that commit per phase and wait on the PR's whole CI run,
-  `githubOwner` on the doctor probe, `environments` on the secrets probe, a
-  probe deferred for a project not yet created, and `from: workspace`). The
-  site's own `ci.yml` pins its lanes separately (v2.78.4).
+  CLI **≥ v2.88.0** — the floor for RUNNING the bootstrap (the phase overlay,
+  landings that commit per phase, `githubOwner` on the doctor probe, a probe
+  deferred for a project not yet created, `from: workspace`, the deploy
+  credentials minted in one `secrets` reconcile, the task set-up run in the
+  background (`background: true`), and landings checked in the box before
+  they merge (`checks: local`)). The site's own `ci.yml` pins its lanes
+  separately (v2.78.4).
 - A Cloudflare account (the free plan is enough for one Worker with static
   assets) and its **Account API token** with Workers Scripts Write (the
   console's Connect recipe lists the exact permission groups). It is the ONLY
@@ -78,8 +85,8 @@ phase whose files are present but branded derives as `drifted`, and
 
 | phase | what it lands | verified by |
 |---|---|---|
-| `01-product` | the repository, created and linked; the brokered Cloudflare secrets; then the whole site in one PR — intent, CI, tooling, identity, `apps/web` + `tests/web` | its PR's `plan` green, merged; the convergence green (build, deploy, smoke) and both workers.dev URLs answering |
-| `03-docs` | `ai/context/deployment.md` from probed facts; prod's promotion gate and dev's push lanes restored | the final probe |
+| `01-product` | the repository, created and linked; the brokered Cloudflare secrets; then the whole site in one PR — intent, CI, tooling, identity, `apps/web` + `tests/web` | its commit validated and planned in the box (as the PR and as the merge), then merged; the convergence green (build, deploy, smoke) and both workers.dev URLs answering |
+| `03-docs` | `ai/context/deployment.md` from probed facts; prod's promotion gate and dev's push lanes restored | the render's own probes, recorded; the commit checked in the box and merged |
 
 ```bash
 orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-notes --run-hooks \
@@ -162,8 +169,8 @@ bash testing/e2e.test.sh         # + network for pnpm: the site built, dry-deplo
 The offline bootstrap (`testing/lib/bootstrap.sh`) places every phase in
 order and finishes each with the blueprint's OWN `run:` hooks — read out of
 `repo-blueprint.yaml`, not transcribed — so the rebrand, the re-tenant, the
-deferrals and their restore, the retouch marker, the lockfile and the
-deployment record all run exactly as a real bootstrap runs them. Only the
+deferrals and their restore, the retouch marker and the deployment record
+all run exactly as a real bootstrap runs them. Only the
 platform's typed actions (task, repo, link, land, watch, probe, reconcile)
 are stood in for, a landing becoming a commit.
 
@@ -192,10 +199,12 @@ at the tag and refuses the whole catalogue if it 404s.
 | `01-product` waits on the `providers` probe, then stops | Cloudflare is not connected. Connect it (console → Integrations), then re-run the phase — the probe is a wait, not a failure |
 | Secret WRITE fails `not_found` while listings work | the API key's role is below admin; re-mint it with the admin role |
 | Deploy lane: Authentication error (10000) | the connection's token lacks Workers Scripts Write; re-issue it, re-connect, re-run `01-product` |
+| `land` stops: `the landing's own check failed — orun plan for …` | the site's tree does not plan — the line after it is orun's own error (an unknown component type, a composition that does not resolve). Nothing was pushed. Fix the tree (or the baseline) and re-run the phase |
+| `land` waits on CI after all | the site's repository requires a status check on `main` (branch protection or a ruleset), so GitHub refused the early merge; the landing waits for the check as a `checks: ci` landing would, then merges |
 | Convergence failed AFTER the PR merged; re-running lands nothing | expected on its own — the files are on main. Re-run the phase (`--phase 01-product`, `--redo 01-product`, or the console's Retry): its `retouch` hook gives the landing a diff and the site redeploys |
 | The site's `intent.yaml` says `workspace: ws_SET_ME` | `orunWorkspace` was empty and the build ran outside a workspace; set it and re-run `01-product` |
 | A bootstrap stopped before `03-docs`; prod no longer waits on stage | the gate is deferred, not dropped: run `03-docs`, or `node tooling/bootstrap/promotion.mjs --restore --file <site>/intent.yaml` |
 | `✕ input "productname" is required` | all three required inputs (`reponame`, `productname`, `githuborg`) must be set on every invocation, single-phase ones included |
-| `unknown flag: --phase` or a parse error in the blueprint | the CLI is below the v2.58.11 floor |
+| `unknown flag: --phase`, `has no parameter "checks"`, `has no parameter "secrets"` or another parse error in the blueprint | the CLI is below the v2.88.0 floor |
 | `01-product` lanes fail in `build-app`: `Symlink apps/web/node_modules/next is invalid, it points out of the filesystem root` | the site's intent pins stack-tectonic ≥ 0.20.0, whose lane-scoped install links each job's node_modules out of its tree, which Next 16's Turbopack refuses. Pin 0.19.0 (baseline-v2 does; `intent.yaml` says why) |
-| `01-product`'s convergence reported green, then `verify` got 404 from both URLs | a second workflow ran on the push to main and the watch took its run (baseline-v1's `checks.yml`). baseline-v2 runs `checks.yml` on pull requests only; read the CI run on main for the real result |
+| `01-product`'s convergence reported green, then `verify` got 404 from both URLs | a second workflow ran on the push to main and the watch took its run (baseline-v1's `checks.yml` did). Only `ci.yml` may run on a push to main, and a site carries no other workflow; read the CI run on main for the real result |

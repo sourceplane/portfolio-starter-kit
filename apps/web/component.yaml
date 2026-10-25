@@ -7,7 +7,17 @@ spec:
   type: cloudflare-workers-assets-turbo
   lifecycle: production
   owner: platform
-  domain: web
+  # Its pages, attached to it in the workspace's catalog: what the Docs
+  # library shows for it, and what the catalog's docs and runbook checks read.
+  # Generated from what this manifest and its sources declare.
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture, title: Architecture }
+      - { path: docs/runbook.md, role: runbook, title: Runbook }
+  # `app`, not `web`: a domain and a component share one name space in the
+  # catalog, and a domain called `web` hid this component from it.
+  domain: app
   path: apps/web
   # Its own lane per environment: the Next.js build is the longest job in the
   # plan, and a shared lane would wait on it.

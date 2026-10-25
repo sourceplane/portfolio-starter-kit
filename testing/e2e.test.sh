@@ -4,13 +4,15 @@
 # placement.test.sh proves the tree a bootstrap ends with is the right tree.
 # This proves it WORKS, by doing to it what its own pipelines will:
 #
-#   1. at the finished site, what `checks.yml` runs on a pull request —
-#      install with the committed lockfile, render fixtures, typecheck, lint,
-#      test, build. The bootstrap's own landings do not wait on it (on a
-#      `orun/BASE-…` branch the job is skipped and `plan` is the check; the
-#      convergence on main builds, deploys and smoke-tests the site), so this
-#      tier is where they run over a bootstrapped tree, and the gate
-#      every LATER pull request of the site meets;
+#   1. at the finished site, the landing's own checks — install with the
+#      lockfile the site ships, render fixtures, typecheck, lint, test,
+#      build. The bootstrap's own landings are checked in the box with
+#      `orun validate` and `orun plan` alone (`checks: local`; their PR's CI
+#      on an `orun/BASE-…` branch is `plan` alone, and the convergence on
+#      main builds, deploys and smoke-tests the site), so THIS is where a
+#      site those steps refuse is caught: before the tag, not after a build
+#      has merged it. Every later pull request of the site runs ci.yml's
+#      verify lanes;
 #   2. the stage lane's own steps, rendered by `orun plan` in the site: on a
 #      pull request (the verify profile) `build-app` — the component's
 #      buildCommand, origin and all, the same step the deploy profile runs —
@@ -36,7 +38,8 @@
 #
 # Needs: orun, node, pnpm, python3 (+PyYAML), git, curl, and the network for
 # `pnpm install` (or a warm store). A few minutes: two installs and builds
-# (the Checks over the site, and the stage lane's own in its staged tree).
+# (the landing's checks over the site, and the stage lane's own in its staged
+# tree).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
@@ -66,24 +69,25 @@ repo="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['reponame
 sub="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['subdomain'])" "$values")"
 export CI=1 WRANGLER_SEND_METRICS=false NEXT_TELEMETRY_DISABLED=1 TURBO_TELEMETRY_DISABLED=1
 
-# What checks.yml runs, step for step, read out of the workflow the site
-# carries so the two cannot drift: every `run:` of its one job, in order.
+# The landing's own checks, step for step, run here at once on the whole
+# tree. A pull request in the site builds and dry-deploys it through ci.yml's
+# lanes; the lint and the tests run here, and by hand before a push.
+LANDING_CHECKS=(
+  "pnpm install --frozen-lockfile"
+  "pnpm run wire:fixture"
+  "pnpm typecheck"
+  "pnpm lint"
+  "pnpm test"
+  "pnpm build"
+)
 checks() { # DIR LOG
   local dir="$1" log="$2" cmd
-  while IFS= read -r cmd; do
+  for cmd in "${LANDING_CHECKS[@]}"; do
     echo "   \$ $cmd" | tee -a "$log"
     if ! (cd "$dir" && bash -c "$cmd") >> "$log" 2>&1; then
       echo "FAIL: \`$cmd\` failed in $dir" >&2; tail -40 "$log" >&2; return 1
     fi
-  done < <(python3 - "$dir/.github/workflows/checks.yml" <<'PY'
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-for job in wf["jobs"].values():
-    for step in job["steps"]:
-        if "run" in step:
-            print(step["run"].strip())
-PY
-)
+  done
 }
 
 echo "── the offline bootstrap (testing/lib/bootstrap.sh)"
@@ -93,7 +97,7 @@ bootstrap_offline "$root" "$tree" "$values" "$scratch/logs" > "$scratch/bootstra
 echo "   2 phases placed and landed"
 
 # ── 1. the finished site ───────────────────────────────────────────────────
-echo "── the finished site, under the checks a pull request of it runs"
+echo "── the finished site: install, the fixture render, typecheck, lint, test, build"
 checks "$tree" "$scratch/checks-site.log"
 
 # ── 2. the deploy lane's steps, for stage ──────────────────────────────────

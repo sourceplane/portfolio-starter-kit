@@ -187,6 +187,10 @@ modules:
     source: baseline
     from: pnpm-workspace.yaml
     to: pnpm-workspace.yaml
+  # The baseline's complete lockfile, as it is: the whole tree lands at once
+  # and the lockfile carries no identity, so there is nothing to re-resolve —
+  # the lanes install it with --frozen-lockfile, and the baseline's own CI
+  # (testing/e2e.test.sh) does the same on this exact tree before a tag.
   - name: root-pnpm-lock
     mode: copy
     source: baseline
@@ -303,16 +307,25 @@ modules:
 # new milestone after the last, and a task naming a milestone the epic does
 # not have yet would create it out of order.
 #
-# Each phase's own `pre` hook runs `orun.task/ensure@v1` on its task again.
-# Same identity, so it finds rather than creates, and it is how the phase gets
-# the task's KEY for its landing. The MILESTONE keeps the phase's name: it is
-# the identity the engine's phase events, the plane's evidence and the
-# console's rows all meet on, and the card's `programme.milestones` names the
-# same list.
+# IN THE BACKGROUND (orun >= v2.88.0, `background: true` on every hook here).
+# Nothing a phase does before its landing reads the task plane — the provider
+# check, the placement, the rebrand, the repository, the secrets — so the
+# whole list runs beside 01-product instead of before it, in order. A hook
+# that works on the plane (`orun.task/ensure@v1`, `orun.pr/land@v1`) waits
+# for it to finish; a failure here stops the build at the next hook.
+#
+# Each phase's own `task` hook runs `orun.task/ensure@v1` on its task again,
+# just before its landing. Same identity, so it finds rather than creates,
+# and it is how the phase gets the task's KEY for its landing; it sits in
+# `post` rather than `pre` so that everything before it overlaps with this
+# list. The MILESTONE keeps the phase's name: it is the identity the engine's
+# phase events, the plane's evidence and the console's rows all meet on, and
+# the card's `programme.milestones` names the same list.
 hooks:
   preInstantiate:
     - id: epic
       uses: orun.task/ensure@v1
+      background: true
       narrate: 'Epic {{ .hooks.epic.outputs.key }} is open.'
       with:
         kind: epic
@@ -328,6 +341,7 @@ hooks:
         owner: me
     - id: m01
       uses: orun.task/ensure@v1
+      background: true
       with:
         kind: milestone
         epic: "{{ .inputs.epicSlug }}"
@@ -338,6 +352,7 @@ hooks:
           - the home page answers on both workers.dev URLs
     - id: m03
       uses: orun.task/ensure@v1
+      background: true
       with:
         kind: milestone
         epic: "{{ .inputs.epicSlug }}"
@@ -347,6 +362,7 @@ hooks:
           - prod waits on stage again
     - id: t01
       uses: orun.task/ensure@v1
+      background: true
       with:
         kind: task
         epic: "{{ .inputs.epicSlug }}"
@@ -362,6 +378,7 @@ hooks:
         contract: .baseline/tasks/01-product.TaskContract.yaml
     - id: t03
       uses: orun.task/ensure@v1
+      background: true
       with:
         kind: task
         epic: "{{ .inputs.epicSlug }}"
@@ -403,7 +420,13 @@ phases:
   - name: 01-product
     title: The site, built in one landing
     description: The whole tree — manifests, tooling, CI, the identity and the site — branded, landed as one pull request, and deployed to stage and prod by one convergence.
-    expectedMinutes: 5
+    # An estimate, not a measurement of this shape: a minute under the 5 it
+    # was, for what v2.88.0 takes out of the wait — the task set-up in the
+    # background, the landing checked here instead of by a runner's `plan`,
+    # the watch reading every 5 s instead of 40 (about a minute on
+    # turso-starter's measured build). The rest is the merge's convergence:
+    # the site's Next.js build, deploy and smoke, stage and prod side by side.
+    expectedMinutes: 4
     # THE PANEL PRINTS THESE VERBATIM, so each is one short clause that is
     # true whenever it is shown; the console draws the timing itself.
     #
@@ -437,19 +460,6 @@ phases:
             waitSeconds: 600
             pollSeconds: 20
     hooks:
-      pre:
-        # The epic, the milestones and the tasks already exist (the run-level
-        # list above). This finds the task and yields its key, which the
-        # landing binds the pull request to.
-        - id: task
-          uses: orun.task/ensure@v1
-          with:
-            kind: task
-            epic: "{{ .inputs.epicSlug }}"
-            milestone: "{{ .phase.name }}"
-            name: "Build the site in one landing"
-            prefix: BASE
-            contract: .baseline/tasks/01-product.TaskContract.yaml
       post:
         # A RE-RUN PHASE MUST HAVE SOMETHING TO LAND. A convergence can fail
         # AFTER its PR merged, and the merge has already put every file this
@@ -522,12 +532,6 @@ phases:
           run: ["git", "add", "-A"]
         - id: rebrand-verify
           run: ["node", "{{ .baseline.dir }}/tooling/rebrand/rebrand.mjs", "--verify", "--values", ".rebrand/values.json"]
-        # root-pnpm-lock places the baseline's complete lockfile and the whole
-        # tree is here, so this only confirms it — a no-op in well under a
-        # second, where the old per-phase prune of the Next.js tree was a
-        # resolve. The lanes and Checks install with --frozen-lockfile.
-        - id: pnpm-lockfile
-          run: ["pnpm", "install", "--lockfile-only"]
         # The repo has to exist before there is anywhere to land. Its line
         # reads the action's outputs, so it is true whether this build found
         # the repository or created it.
@@ -559,34 +563,48 @@ phases:
             - link
             - "{{ .inputs.orunWorkspace }}"
             - "{{ .inputs.githuborg }}/{{ .inputs.reponame }}"
-        # The deploy credentials, brokered, one hook per template:
-        # `integrations/reconcile` mints from ONE connection with ONE scope
-        # template. The deploy lane binds both keys (the workers-assets
-        # composition's `secretBindings`). Keys that already exist are kept.
-        # After the link, before the landing whose convergence uses them.
-        # Their lines are static: a hook id with a `-` cannot be named in a
-        # template, and "in place" is true whether a key was minted or kept.
-        - id: secret-workers-deploy
+        # The deploy credentials, brokered, in ONE hook (orun >= v2.87.0):
+        # `secrets` mints each key under its own scope template from the one
+        # connection the build is bound to, reading the connections and the
+        # existing secrets once and creating the missing keys side by side.
+        # `workers-deploy` is the site's deploy (Workers Scripts); the account
+        # id is a connection fact. The deploy lane binds both keys (the
+        # workers-assets composition's `secretBindings`). Keys that already
+        # exist are kept. After the link, before the landing whose convergence
+        # uses them. Its line is static: "in place" is true whether a key was
+        # minted or kept.
+        - id: secrets
           uses: orun.integrations/reconcile@v1
-          narrate: 'CLOUDFLARE_API_TOKEN is in place, brokered from your Cloudflare connection.'
+          narrate: 'CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are in place, from your Cloudflare connection.'
           with:
             provider: cloudflare
-            keys: [CLOUDFLARE_API_TOKEN]
-            template: workers-deploy
-        - id: secret-account-id
-          uses: orun.integrations/reconcile@v1
-          narrate: 'CLOUDFLARE_ACCOUNT_ID is in place, read from your Cloudflare connection.'
+            secrets:
+              - { key: CLOUDFLARE_API_TOKEN, template: workers-deploy }
+              - { key: CLOUDFLARE_ACCOUNT_ID, template: account-id }
+        # The task this landing closes, and its key. The run-level list above
+        # opens it in the background; this is the first hook that needs it,
+        # so it is the one that waits for that list (orun >= v2.88.0) — every
+        # hook before it ran while the task plane was still being set up.
+        - id: task
+          uses: orun.task/ensure@v1
           with:
-            provider: cloudflare
-            keys: [CLOUDFLARE_ACCOUNT_ID]
-            template: account-id
-        # THE SITE IS A PULL REQUEST THAT IS CHECKED, THEN MERGED. This
-        # landing waits for its PR's own CI (orun >= v2.58.6) and merges only
-        # on green — and on a bootstrap branch (`orun/BASE-…`) that CI is
-        # `plan` alone: ci.yml skips the lanes and checks.yml skips its job,
-        # because the merge runs the site's build, deploy and smoke on
-        # main moments later, for real, and the convergence after the merge
-        # is what `await` watches to green.
+            kind: task
+            epic: "{{ .inputs.epicSlug }}"
+            milestone: "{{ .phase.name }}"
+            name: "Build the site in one landing"
+            prefix: BASE
+            contract: .baseline/tasks/01-product.TaskContract.yaml
+        # THE SITE IS A PULL REQUEST THAT IS CHECKED, THEN MERGED — checked
+        # HERE (`checks: local`, orun >= v2.88.0): `orun validate`, then
+        # `orun plan` as the pull request and as the merge to main plan it,
+        # on the commit, before it is pushed. That is what the PR's `plan`
+        # job checks (the intent, every component and every composition
+        # resolve), plus the merge's own plan, in under a second instead of a
+        # runner's ~25 s. A tree that fails is never pushed. The PR's CI still
+        # runs (`plan` alone on a bootstrap branch, `orun/BASE-…`, ci.yml);
+        # nothing waits for it. The merge runs the site's build, deploy and
+        # smoke on main moments later, for real, and that convergence is what
+        # `await` watches to green.
         # A re-run whose tree main already has lands nothing (`landed` is
         # "false"), and the line says so rather than claiming a merge.
         - id: land
@@ -598,6 +616,7 @@ phases:
             epic: "{{ .inputs.epicSlug }}"
             branchSlug: "{{ .phase.name }}"
             title: "feat: {{ .inputs.productname }}, the whole site from the portfolio starter kit"
+            checks: local
       await:
         # With nothing landed there is no merge commit, and the watch takes
         # main's newest run — or finds none, which is an answer, not a wait.
@@ -611,6 +630,9 @@ phases:
             repo: "{{ .inputs.githuborg }}/{{ .inputs.reponame }}"
             resumeBudget: 3
             waitSeconds: 1800
+            # Read every 5 s, not the action's 40: the build goes on the
+            # moment the run is green instead of up to 40 s after it.
+            pollSeconds: 5
         - id: verify
           uses: orun.http/probe@v1
           narrate: "The site answered on stage and prod."
@@ -620,11 +642,14 @@ phases:
               - "https://{{ .inputs.reponame }}-web-prod.{{ .inputs.subdomain }}.workers.dev"
 
   # Places nothing. It records what 01-product built, from PROBED facts
-  # rather than from what the blueprint intended — which is why it runs last
-  # and why its verify is the probe 01-product ends on.
+  # rather than from what the blueprint intended — which is why it runs last.
+  # Its render probes every URL as it writes the record, and this landing
+  # redeploys nothing, so there is no probe after it to wait for.
   - name: 03-docs
     title: The deployment, recorded
     description: The live-deployment manifest, rendered from probed reality, and the promotion gate put back.
+    # An estimate, not a measurement: the render's probes, the task found,
+    # the commit checked here and merged — nothing built, nothing waited on.
     expectedMinutes: 1
     narrate:
       start:  'Recording the live deployment in the repository.'
@@ -634,16 +659,6 @@ phases:
     requires:
       phases: [01-product]
     hooks:
-      pre:
-        - id: task
-          uses: orun.task/ensure@v1
-          with:
-            kind: task
-            epic: "{{ .inputs.epicSlug }}"
-            milestone: "{{ .phase.name }}"
-            name: "Record the live deployment"
-            prefix: BASE
-            contract: .baseline/tasks/03-docs.TaskContract.yaml
       post:
         # THE SITE GOES LIVE WITH ITS PROMOTION GATE. 01-product deferred
         # `prod.promotion.dependsOn: [stage]`; this, the last landing, puts it
@@ -659,8 +674,17 @@ phases:
         - id: render
           narrate: 'The deployment record is written from what each live URL answered.'
           run: ["bash", "{{ .baseline.dir }}/hooks/render-deployment-docs.sh", ".", "{{ .inputs.orunWorkspace }}", "{{ .baseline.dir }}"]
-        # Checked by `plan` alone, like 01-product's: a bootstrap branch skips
-        # the lanes and checks.yml's job, and nothing here builds.
+        - id: task
+          uses: orun.task/ensure@v1
+          with:
+            kind: task
+            epic: "{{ .inputs.epicSlug }}"
+            milestone: "{{ .phase.name }}"
+            name: "Record the live deployment"
+            prefix: BASE
+            contract: .baseline/tasks/03-docs.TaskContract.yaml
+        # Checked here and merged, as 01-product's landing is; nothing here
+        # builds.
         - id: land
           uses: orun.pr/land@v1
           label: Docs
@@ -670,14 +694,4 @@ phases:
             epic: "{{ .inputs.epicSlug }}"
             branchSlug: "{{ .phase.name }}"
             title: "docs(deployment): record the live deployment state"
-      await:
-        # `quiet`: the addresses are 01-product's facts already, and a second
-        # copy from this re-probe would only repeat them.
-        - id: verify
-          uses: orun.http/probe@v1
-          quiet: true
-          narrate: "Every live URL answered on the final probe."
-          with:
-            urls:
-              - "https://{{ .inputs.reponame }}-web-stage.{{ .inputs.subdomain }}.workers.dev"
-              - "https://{{ .inputs.reponame }}-web-prod.{{ .inputs.subdomain }}.workers.dev"
+            checks: local

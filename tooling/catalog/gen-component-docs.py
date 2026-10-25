@@ -4,8 +4,11 @@
     python3 tooling/catalog/gen-component-docs.py           # write
     python3 tooling/catalog/gen-component-docs.py --check   # fail on drift (CI)
 
-The Orun workspace's Docs library renders the `docs/` folder next to every
-`component.yaml`. These pages are generated, not hand-written, because almost
+Every `component.yaml` attaches its `docs/` folder in `spec.docs` (overview,
+architecture, runbook), which is what the Orun workspace's Docs library shows
+and what the catalog's docs and runbook checks read; a folder nothing declares
+is never attached (testing/coverage.test.sh holds the rule). These pages are
+generated, not hand-written, because almost
 everything in them is already declared somewhere CI validates: the component's
 manifest (type, description, dependencies, environments, the secrets a lane
 resolves, the smoke), its Worker config (bindings, triggers, the wiring the

@@ -41,10 +41,12 @@ A post is `apps/web/app/blog/posts/<slug>.mdx` with front matter `title`,
   built, deployed and smoke-tested.
 - `orun plan --changed` shows which components and environments a change
   touches. CI runs the same plan on every pull request.
-- One task, one pull request to `main`. On the pull request `checks.yml`
-  (install, typecheck, lint, test, build) and `ci.yml`'s verify lanes run;
-  the merge's `ci.yml` run deploys stage and prod and smoke-tests each. That
-  run is the deployment: retry a red lane with `gh run rerun --failed`.
+- One task, one pull request to `main`. On the pull request `ci.yml`'s
+  verify lanes run (the site built and dry-deployed per environment); they
+  do not lint or run the tests, so run `pnpm typecheck && pnpm lint && pnpm
+  test` before you push. The merge's `ci.yml` run deploys stage and prod and
+  smoke-tests each. That run is the deployment: retry a red lane with
+  `gh run rerun --failed`.
 - With Orun's work plane: `orun task create --brief "…"` issues a task key,
   `orun pr open --task <KEY>` opens its pull request on `orun/<KEY>-<slug>`,
   and `orun pr land` merges it once its checks pass. Leave the `BASE` prefix

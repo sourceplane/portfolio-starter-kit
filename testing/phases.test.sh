@@ -12,6 +12,12 @@
 # ONE LANDING BUILDS THE SITE (PK-6, cirrus-baseline baseline-v22's shape):
 # 01-product places every module, and 03-docs only records.
 #
+# And the shape that keeps a bootstrap fast (orun >= v2.88.0, turso-starter
+# baseline-v8's): the run-level task set-up runs in the background, each
+# phase finds its task just before its landing, each landing checks its
+# commit here (`checks: local`), and the convergence watch reads every few
+# seconds.
+#
 # Adapted from sourceplane/cirrus-baseline's testing/phases.test.sh: the
 # narration rules and the hook-only rule are Cirrus's, unchanged.
 #
@@ -49,6 +55,19 @@ PARTITION = {
 HOOK_ONLY = {"03-docs"}
 # The phases that DEPLOY, and so must give a re-run something to land.
 DEPLOYS = {"01-product"}
+# Each phase's pre, post and await hooks, in order — the one-landing recipe.
+# The brokered keys are one `secrets` reconcile. No phase has a `pre` hook:
+# the task is found in `post`, just before the landing, so that everything
+# before it runs beside the background task set-up. 03-docs awaits nothing:
+# its render probes as it writes, and its landing redeploys nothing.
+PRE = {"01-product": [], "03-docs": []}
+POST = {
+    "01-product": ["retouch", "git-init", "git-stage", "rebrand", "orun-workspace", "work-tree",
+                   "promotion", "dev-lanes", "git-restage", "rebrand-verify",
+                   "repo", "link", "secrets", "task", "land"],
+    "03-docs": ["promotion", "dev-lanes", "render", "task", "land"],
+}
+AWAIT = {"01-product": ["converge", "verify"], "03-docs": []}
 
 by_name = {p["name"]: p for p in phases}
 names = [p["name"] for p in phases]
@@ -126,6 +145,58 @@ for p in phases:
         if not watch or (watch[0].get("with") or {}).get("sha") != "{{ .phase.hooks.land.outputs.mergeSha }}":
             bad(f"phase {p['name']} deploys and does not watch the convergence of the "
                 f"commit it merged (orun.run/watch@v1 with sha: mergeSha)")
+
+# ── the hooks run in the one-landing order ────────────────────────────────
+for name, want in PRE.items():
+    got = [h.get("id") for h in ((by_name.get(name, {}).get("hooks") or {}).get("pre") or [])]
+    if got != want:
+        bad(f"phase {name}'s pre hooks are {got}; want {want} — a task found in `pre` waits "
+            f"for the background task set-up before the phase has done anything")
+for name, want in POST.items():
+    got = [h.get("id") for h in ((by_name.get(name, {}).get("hooks") or {}).get("post") or [])]
+    if got != want:
+        bad(f"phase {name}'s post hooks are {got}; the one-landing order is {want}")
+for name, want in AWAIT.items():
+    got = [h.get("id") for h in ((by_name.get(name, {}).get("hooks") or {}).get("await") or [])]
+    if got != want:
+        bad(f"phase {name}'s await hooks are {got}; want {want}")
+for p in phases:
+    if p["name"] not in DEPLOYS:
+        for h in hooks_of(p):
+            if (h.get("uses") or "").startswith(("orun.integrations/reconcile@", "orun.run/watch@")):
+                bad(f"phase {p['name']} deploys nothing and runs {h['uses']} ({h.get('id')})")
+
+# ── THE FAST SHAPE (orun >= v2.88.0) ──────────────────────────────────────
+# The run-level list is the task set-up, all of it in the background: the
+# first phase's provider check, placement, rebrand, repository and secrets
+# run while it opens the epic, the milestones and the tasks.
+for h in run_hooks:
+    if not h.get("background"):
+        bad(f"hooks.preInstantiate {h.get('id')} is not `background: true` — the first phase "
+            f"waits for it before doing anything, though nothing before its landing reads it")
+# A `pre` hook on the task plane would wait for that background at once,
+# before the phase had placed a file — the old order, whatever its id.
+TASK_PLANE = ("orun.task/", "orun.pr/")
+for p in phases:
+    for h in ((p.get("hooks") or {}).get("pre") or []):
+        if (h.get("uses") or "").startswith(TASK_PLANE):
+            bad(f"phase {p['name']}'s pre hook {h.get('id')} uses {h['uses']}, which waits for the "
+                f"background task set-up — find the task in `post`, just before the landing")
+# Every landing checks its commit here and merges, instead of waiting ~25 s
+# for a runner to plan the tree this box just wrote.
+for p in phases:
+    for h in hooks_of(p):
+        if (h.get("uses") or "").startswith("orun.pr/land@") and (h.get("with") or {}).get("checks") != "local":
+            bad(f"phase {p['name']} lands with checks {(h.get('with') or {}).get('checks', 'ci')!r}, "
+                f"not 'local' — it waits for a runner to plan a tree that is here")
+# The convergence watch reads every few seconds, not the action's default 40.
+for p in phases:
+    for h in ((p.get("hooks") or {}).get("await") or []):
+        if (h.get("uses") or "").startswith("orun.run/watch@"):
+            every = (h.get("with") or {}).get("pollSeconds")
+            if not isinstance(every, int) or every > 10:
+                bad(f"phase {p['name']} watches its convergence every {every or 40} s; at most 10 — "
+                    f"the build goes on that much after the run is green")
 
 # ── every phase's task is one the run-level list opens, in the same order ─
 def task_names(hooks):
@@ -225,8 +296,15 @@ for p in phases:
     # missing, not only what a convergence watch sends, so no fixed sentence
     # is true for every wait; with none authored, orun writes "<title>: <the
     # event's reason>", or "<title> is waiting." when it carries none.
+    # And a phase that waits on nothing — no await hook, no probe — never
+    # says its await line, so it may not author one.
+    waits = bool((p.get("hooks") or {}).get("await")) or bool((p.get("requires") or {}).get("probe"))
     for slot in ("start", "await", "done", "failed"):
         line = n.get(slot)
+        if slot == "await" and line and not waits:
+            bad(f"phase {p['name']} declares narrate.await and waits on nothing — "
+                f"nobody would ever read it")
+            continue
         if not line:
             if slot != "await":
                 bad(f"phase {p['name']} declares no narrate.{slot}")
