@@ -4,6 +4,36 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A MANUAL RUN. Orunbase's Run and Deploy buttons start this workflow on
+  # main with component names, an environment and the deploy record's id
+  # (the deploys contract: ci.yml on main; inputs component, environment,
+  # deploy_id); "Run workflow" in the Actions tab does the same by hand. The
+  # plan step plans those components in that environment under the
+  # push-to-main trigger, so each one runs exactly as a merge runs it: stage
+  # and prod apply and deploy, dev verifies. An empty `component` means
+  # every component in the environment, a redeploy with nothing changed.
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "Component names, comma-separated (component.yaml metadata.name); empty for every component"
+        required: false
+        type: string
+        default: ""
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: [dev, stage, prod]
+      deploy_id:
+        description: "Orunbase deploy record (dpl_…), set by Orunbase; appears in the run name"
+        required: false
+        type: string
+        default: ""
+
+# A manual run names itself after what it runs: Orunbase finds a deploy's run
+# by the id in this name (GitHub's dispatch API returns no run id). Every
+# other event keeps GitHub's default name (an empty run-name falls back to it).
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Deploy {0} → {1} · {2}', inputs.component || 'every component', inputs.environment, inputs.deploy_id || 'by hand') || '' }}
 
 # PR runs share a group per ref and superseded runs are cancelled (each
 # push re-plans anyway), which stops stale fan-outs from starving the
@@ -61,18 +91,75 @@ jobs:
           # A successful push prints "✓ pushed catalog …"; ORUN_VERBOSE also makes
           # any skip/failure visible instead of silent.
           ORUN_VERBOSE: "1"
+          # A manual run's selection, read from the environment, never
+          # interpolated into the script.
+          DISPATCH_COMPONENT: ${{ inputs.component }}
+          DISPATCH_ENVIRONMENT: ${{ inputs.environment }}
         run: |
           set -euo pipefail
 
-          plan_args=(
-            --from-ci github
-            --event-file "$GITHUB_EVENT_PATH"
-            --intent intent.yaml
-            --output plan.json
-            --changed
-          )
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            # A MANUAL RUN plans under the push-to-main trigger: the profiles
+            # a merge runs, filtered to the environment and the components it
+            # names. Not --changed: a redeploy is asked for when nothing has
+            # changed. Main only, because that trigger deploys stage and prod.
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error title=Orun CI::A manual run deploys main only; this one was started on ${GITHUB_REF}."
+              exit 1
+            fi
+            plan_args=(
+              --trigger github-push-main
+              --env "$DISPATCH_ENVIRONMENT"
+              --intent intent.yaml
+              --output plan.json
+            )
+            if [ -n "${DISPATCH_COMPONENT//[[:space:],]/}" ]; then
+              # Keep the named components that have something to run in this
+              # environment. orun refuses the others as unmatched (a test
+              # suite has no job in prod), and a run of only those is nothing
+              # selected, not a failure: it stays green with no lanes, which
+              # Orunbase reads as nothing selected.
+              orun plan --trigger github-push-main --env "$DISPATCH_ENVIRONMENT" \
+                --intent intent.yaml --output env-plan.json --no-catalog-refresh >/dev/null
+              kept=0
+              IFS=',' read -ra picked <<< "$DISPATCH_COMPONENT"
+              for c in "${picked[@]}"; do
+                c="${c//[[:space:]]/}"
+                [ -z "$c" ] && continue
+                if ! [[ "$c" =~ ^[a-z0-9][a-z0-9._-]{0,99}$ ]]; then
+                  echo "::error title=Orun CI::'$c' is not a component name (component.yaml metadata.name)."
+                  exit 1
+                fi
+                if jq -e --arg c "$c" 'any(.jobs[]; .component == $c)' env-plan.json >/dev/null; then
+                  plan_args+=(--component "$c")
+                  kept=$((kept + 1))
+                else
+                  echo "::notice title=Orun CI::$c has nothing to run in ${DISPATCH_ENVIRONMENT} (or is not a component); left out."
+                fi
+              done
+              if [ "$kept" = 0 ]; then
+                jq '.jobs = [] | .lanes = []' env-plan.json > plan.json
+                plan_args=()
+              fi
+            fi
+          else
+            plan_args=(
+              --from-ci github
+              --event-file "$GITHUB_EVENT_PATH"
+              --intent intent.yaml
+              --output plan.json
+              --changed
+            )
+          fi
 
-          orun plan "${plan_args[@]}"
+          if [ "${#plan_args[@]}" -gt 0 ]; then
+            orun plan "${plan_args[@]}"
+          fi
+
+          # A manual run that selects nothing runs nothing, and says so.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$(jq '.jobs | length' plan.json)" = 0 ]; then
+            echo "::notice title=Orun CI::Nothing to run for ${DISPATCH_COMPONENT:-every component} in ${DISPATCH_ENVIRONMENT}."
+          fi
       # One matrix entry per LANE (execution.lanes in intent.yaml). A plan
       # without lanes gets one per job, exactly the old matrix, and
       # `orun run --lane <job id>` on it is `--job <job id>`.
