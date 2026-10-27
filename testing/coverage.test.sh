@@ -202,6 +202,53 @@ if on_push != ["ci.yml"]:
         f"it must be exactly ci.yml — orun.run/watch@v1 watches the newest run "
         f"for a commit from ANY workflow, so a second one hides the convergence")
 
+# A MANUAL RUN (the deploys contract, packages/contracts DEPLOY_WORKFLOW in
+# orun-cloud). Orunbase's Run and Deploy buttons dispatch ci.yml on main with
+# inputs component, environment and deploy_id, then find the run by the deploy
+# id in its name; GitHub refuses a dispatch whose inputs the workflow does not
+# declare (422), so a product without them has dead buttons. The plan step
+# must plan a dispatch under the push-to-main binding (what a merge deploys),
+# on main only, and read the inputs from env, never interpolate them.
+import yaml as _ydisp
+_ci_path = root / ".github" / "workflows" / "ci.yml"
+_ci = _ydisp.safe_load(_ci_path.read_text(encoding="utf-8")) or {}
+_on = _ci.get("on", _ci.get(True)) or {}
+_wd = _on.get("workflow_dispatch") if isinstance(_on, dict) else None
+_inputs = (_wd or {}).get("inputs") or {}
+if set(_inputs) != {"component", "environment", "deploy_id"}:
+    bad(f"ci.yml's workflow_dispatch declares inputs {sorted(_inputs) or 'none'}; Orunbase "
+        f"dispatches component, environment and deploy_id, and GitHub refuses unknown inputs")
+else:
+    _intent = _ydisp.safe_load((root / "intent.yaml").read_text(encoding="utf-8")) or {}
+    _envs = set((_intent.get("environments") or {}).keys())
+    _opts = set(_inputs["environment"].get("options") or [])
+    if _inputs["environment"].get("type") != "choice" or _opts != _envs:
+        bad(f"ci.yml's environment input offers {sorted(_opts)}; intent.yaml declares {sorted(_envs)}")
+    if "github-push-main" not in ((_intent.get("automation") or {}).get("triggerBindings") or {}):
+        bad("a manual run plans under intent.yaml's github-push-main binding, which is missing")
+if "inputs.deploy_id" not in str(_ci.get("run-name", "")):
+    bad("ci.yml's run-name must carry inputs.deploy_id: Orunbase finds a deploy's run by that id")
+_steps = (_ci.get("jobs") or {}).get("plan", {}).get("steps") or []
+_plan_step = next((s for s in _steps if "plan_args" in str(s.get("run", ""))), None)
+if _plan_step is None:
+    bad("ci.yml's plan job has no step that builds plan_args")
+else:
+    _run = _plan_step["run"]
+    for _needle, _why in (
+        ('"$GITHUB_EVENT_NAME" = "workflow_dispatch"', "plans a dispatch on its own branch"),
+        ("--trigger github-push-main", "plans a dispatch as a merge to main"),
+        ('"$GITHUB_REF" != "refs/heads/main"', "refuses a dispatch started off main"),
+        ('--env "$DISPATCH_ENVIRONMENT"', "filters a dispatch to its environment"),
+    ):
+        if _needle not in _run:
+            bad(f"ci.yml's plan step no longer {_why} ({_needle!r} is gone)")
+    if "${{" in _run and "inputs." in _run:
+        bad("ci.yml's plan step interpolates inputs.* into its script; read them from env")
+    _env = _plan_step.get("env") or {}
+    if "inputs.component" not in str(_env.get("DISPATCH_COMPONENT", "")) \
+            or "inputs.environment" not in str(_env.get("DISPATCH_ENVIRONMENT", "")):
+        bad("ci.yml's plan step must take DISPATCH_COMPONENT / DISPATCH_ENVIRONMENT from inputs in env")
+
 if problems:
     print("FAIL: the blueprint and this repository disagree about what a product is:",
           file=sys.stderr)
