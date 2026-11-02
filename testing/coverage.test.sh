@@ -249,6 +249,16 @@ else:
             or "inputs.environment" not in str(_env.get("DISPATCH_ENVIRONMENT", "")):
         bad("ci.yml's plan step must take DISPATCH_COMPONENT / DISPATCH_ENVIRONMENT from inputs in env")
 
+# THE BACKEND A PRODUCT PINS IS THE ONE A LOGIN TARGETS. A stored `orun auth
+# login` is bound to its backend and refuses any other URL, and `--backend-url`
+# does not reach the build's hooks, so a local build stops at 01-product's
+# providers check when this names another host for the same API.
+backend = ((yaml.safe_load((root / "intent.yaml").read_text()) or {})
+           .get("execution", {}).get("state", {}).get("backendUrl"))
+if backend != "https://api.orunbase.com":
+    bad(f"intent.yaml pins backendUrl {backend!r}; it must be "
+        f"https://api.orunbase.com, the host `orun auth login` signs in to")
+
 if problems:
     print("FAIL: the blueprint and this repository disagree about what a product is:",
           file=sys.stderr)
