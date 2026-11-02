@@ -8,7 +8,7 @@ metadata:
 
 execution:
   state:
-    backendUrl: https://api-edge-prod.oruncloud.workers.dev
+    backendUrl: https://api.orunbase.com
     # Declared, enforced tenancy: the workspace claim is sent on every remote op
     # (including the credential-free CI OIDC exchange) so the platform can
     # enforce claim ⊆ authorized. Declaring it implies strict mode — a
