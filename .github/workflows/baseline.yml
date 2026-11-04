@@ -58,8 +58,11 @@ jobs:
 
   # Tier 1. THE BLUEPRINT, READ AND PLACED BY THE BINARY A BOOTSTRAP RUNS.
   #
-  # Pinned at the bootstrap floor (BOOTSTRAP.md), not the site's lane pin:
-  # every test here reads YAML with PyYAML, which parses anything well-formed;
+  # Pinned at v2.96.0, not the site's lane pin: at or above the bootstrap
+  # floor (v2.88.0, BOOTSTRAP.md), and the first orun that reads a
+  # component's `spec.preview`, so the placement's `orun validate` checks the
+  # site's live preview too. Every test here reads YAML with PyYAML, which
+  # parses anything well-formed;
   # only the pinned orun can say whether the document is one a bootstrap can
   # run. `--status` parses it, validates every hook against the action
   # registry, compiles every `when` and narration template, and writes
@@ -73,7 +76,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: sourceplane/orun-action@v1.2.0
         with:
-          version: v2.88.0
+          version: v2.96.0
       - uses: pnpm/action-setup@v4
         with:
           version: 10.12.1
@@ -109,10 +112,11 @@ jobs:
   # Tier 2. THE SITE IT PRODUCES WORKS: the finished site installed, its
   # fixtures rendered, type-checked, linted, tested and built, the stage
   # lane's own build, output check and dry deploy, and the built Worker served
-  # and smoke-tested with the component's own smoke command. Pinned at the
-  # bootstrap floor (v2.88.0): the offline bootstrap reads the blueprint (its
+  # and smoke-tested with the component's own smoke command. Pinned at
+  # v2.96.0, above the bootstrap floor (v2.88.0), the first orun that
+  # reads `spec.preview`: the offline bootstrap reads the blueprint (its
   # one `secrets` reconcile, its background task set-up, its landings checked
-  # in the box), and the floor is newer than the site's lane pin (v2.78.4),
+  # in the box), and the pin is newer than the site's lane pin (v2.78.4),
   # which is all the lane steps need.
   site:
     runs-on: ubuntu-latest
@@ -120,7 +124,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: sourceplane/orun-action@v1.2.0
         with:
-          version: v2.88.0
+          version: v2.96.0
       - uses: pnpm/action-setup@v4
         with:
           version: 10.12.1

@@ -61,6 +61,13 @@ compositions:
       cloudflare-domain: stack-tectonic
       db-migrate: stack-tectonic
 
+# The live preview (saas-parallel-baselining PB4): the component orun.work's
+# Preview tab shows while a coding session works on the site. Its own
+# `spec.preview` (apps/web/component.yaml) says how it runs; `orun preview`
+# runs it.
+preview:
+  component: web
+
 discovery:
   roots:
     - apps/
