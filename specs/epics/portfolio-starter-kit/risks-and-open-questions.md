@@ -113,3 +113,14 @@ both URLs). `checks.yml` now runs on pull requests only, so a push to main
 starts `ci.yml` alone; `testing/coverage.test.sh` fails if a shipped workflow
 other than `ci.yml` runs on push. Upstream: the watch could select the run by
 workflow (e.g. the one that ran `orun run`).
+
+## PK-L — 03-docs needs PyYAML the build box lacks (RESOLVED)
+
+`hooks/render-deployment-docs.sh` imported `yaml` to read `SITE_URL` from
+`intent.yaml`. The build box has python3 but not PyYAML, so the import failed
+with exit 1 and no message. A console build (`vijayakrishnans/portfolio-and-blog`,
+2026-11-06) stopped at 03-docs with its site live on stage and prod; local and
+CLI runs had PyYAML and passed. blog-starter (BS-H) and astro-boilerplate (AB-L)
+hit the same bug. The hook now uses PyYAML when present and reads that one key
+by indentation otherwise. `testing/render.test.sh` runs it under a python3 with
+no third-party packages.

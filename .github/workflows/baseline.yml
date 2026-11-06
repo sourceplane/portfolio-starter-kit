@@ -41,11 +41,11 @@ jobs:
           # names a packageManager, and then fails on a runner with no pnpm.
           # This job installs nothing.
           package-manager-cache: false
-      - name: Contract tests (manifest, phases, coverage, rebrand, retouch, bootstrap-defer)
+      - name: Contract tests (manifest, phases, coverage, rebrand, retouch, bootstrap-defer, render)
         run: |
           set -euo pipefail
           python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
-          for t in manifest phases coverage rebrand retouch bootstrap-defer; do
+          for t in manifest phases coverage rebrand retouch bootstrap-defer render; do
             echo "── $t"
             bash "testing/$t.test.sh"
           done
