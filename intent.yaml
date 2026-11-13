@@ -52,7 +52,7 @@ compositions:
     # layout the pinned composition plans, so a bump is tested, not assumed.
     - name: stack-tectonic
       kind: oci
-      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.19.0
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.19.1
   resolution:
     precedence:
       - stack-tectonic
